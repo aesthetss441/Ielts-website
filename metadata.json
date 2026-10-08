@@ -1,0 +1,8 @@
+{
+  "name": "IELTS DECODED",
+  "description": "Find what's holding your IELTS score back. Academic IELTS mentorship, diagnostics, and Band 7+ Score Rescue guide by Jubayer Siddiki.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

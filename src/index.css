@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Fraunces", Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-paper: var(--bg-paper);
+  --color-ivory: var(--bg-ivory);
+  --color-surface-elevated: var(--bg-elevated);
+  --color-ink: var(--text-ink);
+  --color-ink-muted: var(--text-muted);
+  --color-ink-subtle: var(--text-subtle);
+  --color-rule: var(--border-rule);
+  --color-rule-strong: var(--border-rule-strong);
+  --color-violet-pen: var(--accent-violet);
+  --color-violet-pen-hover: var(--accent-violet-hover);
+  --color-examiner-red: var(--accent-red);
+}
+
+:root {
+  /* Light Mode: Warm Archival Examiner's Desk */
+  --bg-paper: oklch(97.6% 0.008 82);
+  --bg-ivory: oklch(95.2% 0.013 80);
+  --bg-elevated: oklch(99.1% 0.004 85);
+  --text-ink: oklch(20.5% 0.014 60);
+  --text-muted: oklch(44% 0.016 62);
+  --text-subtle: oklch(56% 0.014 64);
+  --border-rule: oklch(86.5% 0.014 75);
+  --border-rule-strong: oklch(72% 0.018 70);
+  /* #5B2EE0 in OKLCH */
+  --accent-violet: oklch(48.8% 0.243 283.5);
+  --accent-violet-hover: oklch(43% 0.235 283.5);
+  /* Examiner Red for annotations */
+  --accent-red: oklch(54% 0.21 26);
+}
+
+.dark {
+  /* Designed Dark Mode: Late-Night Editorial Study */
+  --bg-paper: oklch(17.5% 0.01 65);
+  --bg-ivory: oklch(21.2% 0.012 65);
+  --bg-elevated: oklch(23.5% 0.014 65);
+  --text-ink: oklch(93.5% 0.01 82);
+  --text-muted: oklch(73% 0.012 75);
+  --text-subtle: oklch(58% 0.012 70);
+  --border-rule: oklch(29.5% 0.014 65);
+  --border-rule-strong: oklch(40% 0.016 65);
+  --accent-violet: oklch(67% 0.195 283.5);
+  --accent-violet-hover: oklch(73% 0.18 283.5);
+  --accent-red: oklch(66% 0.19 26);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background-color: var(--bg-paper);
+    color: var(--text-ink);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  .dark body {
+    letter-spacing: 0.008em;
+  }
+}
+
+/* Fluid Editorial Typography (Increased contrast in type scale) */
+.text-display-hero {
+  font-size: clamp(2.35rem, 4.8vw + 0.9rem, 4.35rem);
+  line-height: 1.05;
+  letter-spacing: -0.028em;
+  text-wrap: balance;
+}
+
+.text-display-section {
+  font-size: clamp(1.9rem, 3.3vw + 0.7rem, 3.15rem);
+  line-height: 1.1;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+}
+
+.text-display-numeral {
+  font-size: clamp(3.85rem, 7.8vw + 1rem, 6.85rem);
+  line-height: 0.92;
+  letter-spacing: -0.038em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Faint Paper Grain (Zero-cost GPU-friendly subtle paper texture — avoids expensive live SVG feTurbulence recalculation on scroll) */
+.paper-grain {
+  background-image: radial-gradient(rgba(30, 26, 22, 0.03) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.dark .paper-grain {
+  background-image: radial-gradient(rgba(245, 240, 232, 0.025) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+/* RedPen System: Scroll-into-view ~700ms ease-out stroke-dashoffset draw */
+.red-pen-stroke {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.red-pen-stroke.is-drawn {
+  stroke-dashoffset: 0;
+}
+
+/* RedPen Button Hover Underline */
+.red-pen-hover-stroke {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 450ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.group\/btn:hover .red-pen-hover-stroke,
+.group\/btn:focus-visible .red-pen-hover-stroke,
+.group\/pen:hover .red-pen-hover-stroke {
+  stroke-dashoffset: 0;
+}
+
+/* Staggered List Reveal */
+.stagger-item {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 500ms ease-out, transform 500ms ease-out;
+}
+
+.stagger-list.is-visible .stagger-item {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Respect prefers-reduced-motion: marks appear instantly, no tilt/lift */
+@media (prefers-reduced-motion: reduce) {
+  .red-pen-stroke,
+  .red-pen-stroke.is-drawn {
+    stroke-dashoffset: 0 !important;
+    transition: none !important;
+  }
+
+  .red-pen-hover-stroke {
+    transition: none !important;
+  }
+
+  .stagger-item {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
