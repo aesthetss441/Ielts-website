@@ -285,6 +285,18 @@ export default function App() {
     }
   };
 
+  // Sync document.title and canonical metadata with route
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (currentRoute === 'guides') {
+      document.title = 'IELTS DECODED Guides: 4-Module Self-Prep Books (Listening, Reading, Writing, Speaking)';
+    } else if (currentRoute === 'diagnostic') {
+      document.title = 'IELTS DECODED Examiner Desk: AI Writing Evaluation & Band Score Diagnostic';
+    } else {
+      document.title = 'IELTS DECODED: Academic IELTS Mentorship, Self-Prep Guides & Band 7+ Diagnostic';
+    }
+  }, [currentRoute]);
+
   // Dark mode sync
   useEffect(() => {
     const root = document.documentElement;

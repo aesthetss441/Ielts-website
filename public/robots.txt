@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Allow: /guides
+Allow: /diagnostic
+
+# Sitemaps
+Sitemap: https://ieltsdecoded.com/sitemap.xml

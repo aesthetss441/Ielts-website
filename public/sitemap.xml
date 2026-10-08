@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <!-- Homepage: IELTS DECODED Academic IELTS Mentorship & Score Rescue -->
+  <url>
+    <loc>https://ieltsdecoded.com/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://ieltsdecoded.com/proof-1.jpg</image:loc>
+      <image:title>IELTS DECODED Band 7 and Band 8 Verified Score Reports</image:title>
+      <image:caption>Official IELTS Academic results achieved by IELTS DECODED mentorship students.</image:caption>
+    </image:image>
+  </url>
+
+  <!-- Self-Prep Guides: Complete 4-Module System (Listening, Reading, Writing, Speaking) -->
+  <url>
+    <loc>https://ieltsdecoded.com/guides</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://ieltsdecoded.com/listening-p01-cover.webp</image:loc>
+      <image:title>IELTS DECODED Listening Self-Prep Guide</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://ieltsdecoded.com/reading-p01-cover.webp</image:loc>
+      <image:title>IELTS DECODED Reading Self-Prep Guide</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://ieltsdecoded.com/writing-p01-cover.webp</image:loc>
+      <image:title>IELTS DECODED Writing Self-Prep Guide</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://ieltsdecoded.com/speaking-p01-cover.webp</image:loc>
+      <image:title>IELTS DECODED Speaking Self-Prep Guide</image:title>
+    </image:image>
+  </url>
+
+  <!-- Examiner Desk & AI Diagnostic: Writing Evaluation & Score Gap Advisor -->
+  <url>
+    <loc>https://ieltsdecoded.com/diagnostic</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+</urlset>

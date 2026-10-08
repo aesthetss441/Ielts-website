@@ -951,7 +951,7 @@ ${
 =============================================================================
 EVIDENCE-BASED SCORING & BAND 7 vs BAND 8 vs BAND 9 DISCRIMINATION
 =============================================================================
-1. Complete the structured `internalExaminerAnalysis` FIRST before assigning any criterion band or overall band.
+1. Complete the structured 'internalExaminerAnalysis' FIRST before assigning any criterion band or overall band.
 2. Every criterion score must be explainable and backed by direct quotes from the student's text.
 3. Never make vague, unsubstantiated claims like "Vocabulary is not advanced enough", "Grammar needs more complexity", or "Cohesion is only moderate." Always point to actual evidence in the student's essay.
 4. **Prevent Both Score Deflation AND Score Inflation (Distinguishing Bands 7, 8, and 9 Precisely)**:
@@ -960,9 +960,9 @@ EVIDENCE-BASED SCORING & BAND 7 vs BAND 8 vs BAND 9 DISCRIMINATION
    - **Band 7 (Good User)**: Award **7.0** when the essay addresses all main parts of the prompt with a clear position throughout, logical paragraphing, and frequent error-free sentences, but exhibits typical Band 7 ceiling traits: (a) a tendency to **over-generalise** in supporting points (e.g., absolute claims like "always solves air pollution" or broad statements without specific mechanism); OR (b) reliance on standard classroom discourse markers ("On the one hand", "On the other hand", "Additionally", "Therefore", "In conclusion") with minor over-use; OR (c) a few occasional errors in word choice, style, or grammar.
    - **Band 6 (Competent User)**: Award **6.0** when the essay addresses the task with a relevant position and coherent arrangement, but ideas are somewhat general/insufficiently developed, cohesive devices are mechanical ("Firstly", "Secondly", "Moreover", "Nowadays"), vocabulary is adequate but repetitive, or complex sentences contain noticeable grammar slips (countable/uncountable nouns like "equipments", determiners like "less people", singular/plural agreement like "reduces traffic jam") that do not impede communication.
    - **Band 5 (Modest User)**: Award **5.0** when the essay incompletely addresses the task, relies heavily on memorised template clichés ("In this modern era of globalization", "every coin has two sides", "burning issue"), develops ideas weakly, uses limited structures, and makes frequent grammatical and lexical errors.
-5. For `redPenUpgrades`:
+5. For 'redPenUpgrades':
    - If the essay is Band 5.0–7.5: select 2 actual weak, general, or flawed sentences from the student's draft, explain the exact descriptor flaw, and rewrite them to natural Band 8.5+ standard.
-   - If the essay is already Band 8.0–9.0: select 2 sentences from the student's draft, explicitly note in `whyItLosesMarks` why the sentence is already effective (or point out any subtle nuance), and provide an alternative Band 9 stylistic variation in `band75Upgrade`.`;
+   - If the essay is already Band 8.0–9.0: select 2 sentences from the student's draft, explicitly note in 'whyItLosesMarks' why the sentence is already effective (or point out any subtle nuance), and provide an alternative Band 9 stylistic variation in 'band75Upgrade'.`;
 
       const userPrompt = `Evaluate this ${taskLabel} strictly against the Official IELTS Writing Band Descriptors.
 Student's Target Band: ${targetBand}
@@ -1307,6 +1307,20 @@ Give an honest, mathematically sound IELTS diagnosis:
             : 'Could not generate your score diagnosis right now. Please try again.',
       });
     }
+  });
+
+  // =========================================================================
+  // SEO Routes: robots.txt and sitemap.xml
+  // =========================================================================
+  const publicDir = path.resolve(__dirname, 'public');
+  app.get('/robots.txt', (_req, res) => {
+    res.type('text/plain');
+    res.sendFile(path.join(publicDir, 'robots.txt'));
+  });
+
+  app.get('/sitemap.xml', (_req, res) => {
+    res.type('application/xml');
+    res.sendFile(path.join(publicDir, 'sitemap.xml'));
   });
 
   // =========================================================================
