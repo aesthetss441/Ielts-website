@@ -27,11 +27,13 @@ import {
 export function GuidesBundleBar({
   selectedIds,
   onToggleId,
+  onSelectAll,
   onWaAction,
   stickyMobile = false,
 }: {
   selectedIds: GuideModuleId[];
   onToggleId: (id: GuideModuleId) => void;
+  onSelectAll?: () => void;
   onWaAction: (messageText: string) => void;
   stickyMobile?: boolean;
 }) {
@@ -40,7 +42,8 @@ export function GuidesBundleBar({
   ).map((g) => g.moduleName);
 
   const count = selectedNames.length;
-  const hasBundleDiscount = count >= 3;
+  const isAllFour = count === 4;
+  const hasThreeBundle = count === 3;
   const waMessage = buildGuidesBundleWaMessage(selectedNames);
 
   return (
@@ -59,8 +62,22 @@ export function GuidesBundleBar({
               ·
             </span>
             <RedPen type="underline" seed={2} className="text-examiner-red font-medium">
-              Buy 3 or more: bundle discount (confirmed on WhatsApp)
+              Complete 4-Guide Bundle: BDT 1,499 (Save BDT 500)
             </RedPen>
+            {onSelectAll && !isAllFour && (
+              <>
+                <span className="text-ink-subtle" aria-hidden="true">
+                  ·
+                </span>
+                <button
+                  type="button"
+                  onClick={onSelectAll}
+                  className="text-violet-pen hover:text-ink underline underline-offset-4 font-medium cursor-pointer"
+                >
+                  Select all 4 guides →
+                </button>
+              </>
+            )}
           </div>
 
           {/* 4 Checkboxes for Listening, Reading, Writing, Speaking */}
@@ -107,21 +124,42 @@ export function GuidesBundleBar({
             {count === 0 ? (
               <>
                 <span className="block text-sm text-ink font-medium tabular-nums">
-                  BDT 499 per guide
+                  BDT 499 per guide · All 4 for BDT 1,499
                 </span>
                 <span className="block text-[11px] text-ink-muted">
                   Select guides to build your bundle
                 </span>
               </>
+            ) : isAllFour ? (
+              <>
+                <div className="flex sm:justify-end items-baseline gap-2.5 tabular-nums">
+                  <RedPen type="strike" seed={0} className="text-xs text-ink-subtle">
+                    BDT 1,996
+                  </RedPen>
+                  <span className="text-lg sm:text-xl text-ink font-semibold">
+                    BDT 1,499
+                  </span>
+                </div>
+                <span className="block text-[11px] text-examiner-red font-medium">
+                  All 4 Guides Bundle · Save BDT 500 (1 guide FREE)
+                </span>
+              </>
+            ) : hasThreeBundle ? (
+              <>
+                <span className="block text-base sm:text-lg text-ink font-semibold tabular-nums">
+                  BDT 499 × 3 (BDT 1,497)
+                </span>
+                <span className="block text-[11px] text-examiner-red font-medium">
+                  Add 4th guide for just BDT 2 more (All 4 = BDT 1,499)
+                </span>
+              </>
             ) : (
               <>
                 <span className="block text-base sm:text-lg text-ink font-semibold tabular-nums">
-                  BDT 499 × {count}
+                  BDT {count * 499} ({count} {count === 1 ? 'guide' : 'guides'})
                 </span>
                 <span className="block text-[11px] text-examiner-red font-medium">
-                  {hasBundleDiscount
-                    ? 'bundle discount, confirmed on WhatsApp'
-                    : 'Select 3+ guides for bundle discount'}
+                  Or get all 4 guides for BDT 1,499 (Save BDT 500)
                 </span>
               </>
             )}
@@ -137,13 +175,29 @@ export function GuidesBundleBar({
             <RedPen type="underline" seed={0} drawOnHover>
               {count === 0
                 ? 'Ask about Self-Prep Guides'
-                : count >= 3
-                ? `Get ${count} guides on WhatsApp (bundle)`
-                : `Get ${count} ${count === 1 ? 'guide' : 'guides'} on WhatsApp`}
+                : isAllFour
+                ? 'Get All 4 Guides (BDT 1,499) on WhatsApp'
+                : count === 3
+                ? 'Get 3 Guides on WhatsApp (Bundle)'
+                : `Get ${count} ${count === 1 ? 'Guide' : 'Guides'} on WhatsApp`}
             </RedPen>
             <IconArrowUpRight className="w-4 h-4" />
           </a>
         </div>
+      </div>
+
+      {/* 50% Course Fee Credit Guarantee + bKash/Nagad Instant Delivery Strip */}
+      <div className="mt-4 pt-3.5 border-t border-rule flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-mono text-[11px]">
+        <p className="text-ink">
+          <span className="text-examiner-red font-semibold uppercase tracking-wider">
+            50% Course Fee Credit Guarantee:
+          </span>{' '}
+          If you join the 12-Week Batch or 1-to-1 Crash Course within 14 days of buying any PDF guide,{' '}
+          <strong className="font-semibold">50% of what you paid for your PDFs is deducted</strong> from your course fee.
+        </p>
+        <span className="text-ink-muted shrink-0">
+          Instant PDF delivery via WhatsApp (bKash / Nagad / Bank)
+        </span>
       </div>
     </div>
   );
@@ -159,6 +213,7 @@ function LandingGuideHairlineRow({
   onSelect,
   onWaAction,
   onNavigateToGuides,
+  onDownloadSample,
   onResolvedImagesChange,
 }: {
   guide: GuideData;
@@ -167,6 +222,7 @@ function LandingGuideHairlineRow({
   onSelect: () => void;
   onWaAction: (messageText: string) => void;
   onNavigateToGuides: (moduleId?: GuideModuleId) => void;
+  onDownloadSample?: (moduleId: GuideModuleId) => void;
   onResolvedImagesChange: (moduleId: GuideModuleId, imgs: ResolvedGuideImage[]) => void;
 }) {
   const { images } = useResolvedGuideImages(guide);
@@ -205,10 +261,23 @@ function LandingGuideHairlineRow({
             <p className="mt-1.5 text-sm text-ink-muted leading-relaxed max-w-[60ch]">
               {guide.oneLine}
             </p>
+
+            {onDownloadSample && (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => onDownloadSample(guide.id)}
+                  className="min-h-[36px] px-3.5 py-1.5 inline-flex items-center gap-1.5 border border-rule-strong bg-paper hover:border-ink hover:text-violet-pen text-ink font-mono text-xs transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  <span>Download Free 5-Page Demo PDF</span>
+                  <span aria-hidden="true">↓</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right: Price BDT 500 + Get on WhatsApp + Look inside */}
+        {/* Right: Price BDT 499 + Get on WhatsApp + Look inside */}
         <div className="flex flex-wrap items-center gap-3 sm:shrink-0 pl-7 sm:pl-0">
           <span className="font-mono text-sm font-semibold text-ink tabular-nums mr-1">
             BDT {guide.priceBdt}
@@ -289,12 +358,15 @@ function LandingGuideHairlineRow({
 export function LandingSelfPrepSection({
   onWaAction,
   onNavigateToGuides,
+  onDownloadSample,
 }: {
   onWaAction: (messageText: string) => void;
   onNavigateToGuides: (moduleId?: GuideModuleId) => void;
+  onDownloadSample?: (moduleId: GuideModuleId) => void;
 }) {
   const [activeGuideId, setActiveGuideId] = useState<GuideModuleId>('reading');
   const [selectedBundleIds, setSelectedBundleIds] = useState<GuideModuleId[]>([
+    'listening',
     'reading',
     'writing',
     'speaking',
@@ -325,6 +397,10 @@ export function LandingSelfPrepSection({
     );
   };
 
+  const selectAllBundleIds = () => {
+    setSelectedBundleIds(['listening', 'reading', 'writing', 'speaking']);
+  };
+
   const activeGuide =
     SELF_PREP_GUIDES.find((g) => g.id === activeGuideId) || SELF_PREP_GUIDES[1];
   const activeImages = resolvedMap[activeGuide.id] || [];
@@ -341,7 +417,7 @@ export function LandingSelfPrepSection({
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
           <div className="max-w-2xl">
             <span className="block font-mono text-[11px] uppercase tracking-widest text-ink-muted mb-3">
-              03. Self-Prep Guides · BDT 499 Each
+              03. Self-Prep Guides · BDT 499 Each · All 4 for BDT 1,499
             </span>
             <h2 className="font-serif text-display-section font-normal text-ink">
               Study on your own, with{' '}
@@ -351,7 +427,7 @@ export function LandingSelfPrepSection({
               .
             </h2>
             <p className="mt-3 text-base sm:text-lg text-ink-muted">
-              Four all-in-one PDF guides, one for each module. BDT 499 each.
+              Four all-in-one PDF guides, one for each module. BDT 499 each, or get the complete 4-guide bundle for <strong className="text-ink font-medium">BDT 1,499 (Save BDT 500)</strong>.
             </p>
           </div>
 
@@ -383,6 +459,7 @@ export function LandingSelfPrepSection({
                 onSelect={() => setActiveGuideId(guide.id)}
                 onWaAction={onWaAction}
                 onNavigateToGuides={onNavigateToGuides}
+                onDownloadSample={onDownloadSample}
                 onResolvedImagesChange={handleResolvedChange}
               />
             ))}
@@ -427,12 +504,13 @@ export function LandingSelfPrepSection({
           <GuidesBundleBar
             selectedIds={selectedBundleIds}
             onToggleId={toggleBundleId}
+            onSelectAll={selectAllBundleIds}
             onWaAction={onWaAction}
           />
         </div>
 
         {/* Bottom Link to /guides */}
-        <div className="mt-6 flex items-center justify-between">
+        <div className="mt-6 flex justify-end">
           <a
             href="/guides"
             onClick={(e) => {

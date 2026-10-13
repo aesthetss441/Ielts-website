@@ -60,6 +60,15 @@ export function IconClose({ className = 'w-5 h-5' }: { className?: string }) {
   );
 }
 
+export function IconCheckCircle({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8.5 12.5l2.5 2.5 5-5" />
+    </svg>
+  );
+}
+
 export function IconSunMoon({ isDark, className = 'w-4 h-4' }: { isDark: boolean; className?: string }) {
   return isDark ? (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">

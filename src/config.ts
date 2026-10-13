@@ -50,12 +50,23 @@ export interface WrittenQuoteItem {
 }
 
 export interface VideoTestimonialConfig {
-  videoUrl: string; // e.g., '/testimonial.mp4' (upload to public/) or a YouTube/Drive embed link
+  id: string;
+  tabLabel: string;
+  videoUrl: string; // e.g., '/testimonial.mp4' or '/testimonial-2.mp4'
+  secondaryVideoUrls?: string[];
   posterUrl?: string;
+  durationBadge?: string;
+  sessionBadge?: string;
   headlineQuote: string;
+  highlightWords?: string;
+  dialoguePreview?: {
+    speaker: string;
+    text: string;
+  }[];
   summaryPoints: string[];
   studentLabel: string;
   moduleHighlight: string;
+  permissionNote?: string;
 }
 
 export interface SiteConfig {
@@ -93,7 +104,8 @@ export interface SiteConfig {
   };
   reviews: {
     ratingBadgeText?: string;
-    videoTestimonial: VideoTestimonialConfig;
+    videoTestimonials: VideoTestimonialConfig[];
+    videoTestimonial?: VideoTestimonialConfig;
     writtenQuotes: WrittenQuoteItem[];
     items: ReviewItem[];
   };
@@ -147,17 +159,82 @@ export const SITE_CONFIG: SiteConfig = {
   },
   reviews: {
     ratingBadgeText: 'Student-shared results, shown with permission',
+    videoTestimonials: [
+      {
+        id: 'video-1on1-practical',
+        tabLabel: '1-to-1 Tailored Feedback (Job Holder)',
+        videoUrl: '/testimonial-2.mp4',
+        posterUrl: '/testimonial-2-poster.jpg',
+        durationBadge: '0:55',
+        sessionBadge: 'LIVE 1-TO-1 COACHING',
+        headlineQuote:
+          '“I was looking for someone who would give me exact 1-to-1 tailored feedback in a structured, proper way. Jubayer’s techniques are really practical—nothing fancy, just what actually works, to the point, and precise.”',
+        highlightWords: 'exact 1-to-1 tailored feedback',
+        dialoguePreview: [
+          {
+            speaker: 'Jubayer Siddiki',
+            text: '“Can you give brief feedback regarding how this course is helping you? And would you recommend this course to others?”',
+          },
+          {
+            speaker: 'Student (Job Holder)',
+            text: '“Yes, definitely! I benefited directly, so why wouldn’t others? Working a full-time job, I needed structured 1-to-1 feedback. Tips and tricks are everywhere online, but Jubayer’s strategies and notes are practical—what actually works, nothing fancy, to the point, and precise.”',
+          },
+        ],
+        summaryPoints: [
+          'The Need: Working a full-time job with limited prep time, needed structured 1-to-1 feedback tailored directly to his personal errors.',
+          'Why It Works: Discarded superficial internet tips; Jubayer’s question-solving notes and strategies are strictly practical and precise.',
+          'The Recommendation: Got real, tangible progress through 1-to-1 sessions and enthusiastically recommends the coaching to other candidates.',
+        ],
+        studentLabel: 'Working Professional · 1-to-1 Live Coaching Session',
+        moduleHighlight: '1-to-1 Tailored Feedback · Practical Strategies',
+        permissionNote: 'Recorded during live Google Meet 1-to-1 session · Shared with permission',
+      },
+      {
+        id: 'video-reading-headings',
+        tabLabel: 'Reading · List of Headings Breakthrough',
+        videoUrl: '/testimonial.mp4',
+        posterUrl: '/testimonial-1-poster.jpg',
+        durationBadge: '0:47',
+        sessionBadge: 'ACADEMIC READING REVIEW',
+        headlineQuote:
+          '“I felt really stuck before joining. Reading List of Headings used to be really hard—after Jubayer’s guidance, I gained confidence and started improving consistently.”',
+        highlightWords: 'Reading List of Headings',
+        dialoguePreview: [
+          {
+            speaker: 'Student',
+            text: '“At first I was a little bit stuck in my preparation. I was looking for someone who would teach me hands-on and practically.”',
+          },
+          {
+            speaker: 'Key Breakthrough',
+            text: '“After learning the systematic heading verification method, stopped second-guessing and improved accuracy consistently.”',
+          },
+        ],
+        summaryPoints: [
+          'Before: Felt stuck and lost marks repeatedly on Reading — List of Headings (Matching Headings).',
+          'The Fix: Step-by-step strategy to stop guessing from first-line distractors and find paragraph core arguments.',
+          'After: Built real exam confidence, improved Reading accuracy, and recommends the program to other students.',
+        ],
+        studentLabel: 'IELTS DECODED Student · Video Review',
+        moduleHighlight: 'Reading · List of Headings Breakthrough',
+        permissionNote: 'Shared with student permission · Academic Reading',
+      },
+    ],
     videoTestimonial: {
-      videoUrl: '/testimonial.mp4', // Upload your video to public/testimonial.mp4 (or paste a YouTube/Drive embed URL here)
+      id: 'video-1on1-practical',
+      tabLabel: '1-to-1 Tailored Feedback (Job Holder)',
+      videoUrl: '/testimonial-2.mp4',
+      posterUrl: '/testimonial-2-poster.jpg',
       headlineQuote:
-        '“I felt really stuck before joining. Reading List of Headings used to be really hard—after Jubayer’s guidance, I gained confidence and started improving consistently.”',
+        '“I was looking for someone who would give me exact 1-to-1 tailored feedback in a structured, proper way. Jubayer’s techniques are really practical—nothing fancy, just what actually works, to the point, and precise.”',
+      highlightWords: 'exact 1-to-1 tailored feedback',
       summaryPoints: [
-        'Before: Felt stuck and lost marks repeatedly on Reading — List of Headings (Matching Headings).',
-        'The Fix: Step-by-step strategy to stop guessing from first-line distractors and find paragraph main ideas.',
-        'After: Built real exam confidence, improved Reading accuracy, and recommends the program to other students.',
+        'The Need: Working a full-time job with limited prep time, needed structured 1-to-1 feedback tailored directly to his personal errors.',
+        'Why It Works: Discarded superficial internet tips; Jubayer’s question-solving notes and strategies are strictly practical and precise.',
+        'The Recommendation: Got real, tangible progress through 1-to-1 sessions and enthusiastically recommends the coaching to other candidates.',
       ],
-      studentLabel: 'IELTS DECODED Student · Video Review',
-      moduleHighlight: 'Reading · List of Headings Breakthrough',
+      studentLabel: 'Working Professional · 1-to-1 Live Coaching Session',
+      moduleHighlight: '1-to-1 Tailored Feedback · Practical Strategies',
+      permissionNote: 'Recorded during live Google Meet 1-to-1 session · Shared with permission',
     },
     writtenQuotes: [
       {
@@ -231,7 +308,7 @@ export const SITE_CONFIG: SiteConfig = {
   },
 };
 
-const WA_MESSAGES: Record<WaKeyword, string> = {
+export const WA_MESSAGES: Record<WaKeyword, string> = {
   RESCUE: "Hi Jubayer, I'd like the free guide. RESCUE",
   WRITE: "Hi Jubayer, I'd like the free writing evaluation. WRITE",
   ENROLL: "Hi Jubayer, I'd like to ask about the 12-Week Band 7+ Roadmap Mentorship Program. ENROLL",
@@ -256,6 +333,8 @@ export function wa(keywordOrMessage: WaKeyword | string = 'GENERAL'): string {
   return `https://wa.me/${SITE_CONFIG.whatsapp.internationalNumber}?text=${encodeURIComponent(message)}`;
 }
 
+export const getWaUrl = wa;
+
 /**
  * Returns the raw pre-filled message text for a given keyword or custom text.
  */
@@ -266,7 +345,7 @@ export function getWaMessageText(keywordOrMessage: WaKeyword | string = 'GENERAL
 }
 
 /**
- * Builds the exact WhatsApp message for 1, 2, or 3+ selected Self-Prep Guides.
+ * Builds the exact WhatsApp message for 1, 2, 3, or all 4 selected Self-Prep Guides.
  */
 export function buildGuidesBundleWaMessage(selectedModuleNames: string[]): string {
   if (selectedModuleNames.length === 0) {
@@ -276,20 +355,133 @@ export function buildGuidesBundleWaMessage(selectedModuleNames: string[]): strin
     return `Hi Jubayer, I'd like the IELTS DECODED ${selectedModuleNames[0]} Self-Prep Guide (BDT 499).`;
   }
   if (selectedModuleNames.length === 2) {
-    return `Hi Jubayer, I'd like these guides: ${selectedModuleNames.join(', ')} (2 guides, BDT 499 × 2).`;
+    return `Hi Jubayer, I'd like these guides: ${selectedModuleNames.join(', ')} (2 guides, BDT 998 total).`;
   }
-  return `Hi Jubayer, I'd like these guides: ${selectedModuleNames.join(', ')} (${selectedModuleNames.length} guides). Could you share the bundle price?`;
+  if (selectedModuleNames.length >= 4) {
+    return `Hi Jubayer, I'd like the Complete 4-Module Self-Prep PDF Bundle (${selectedModuleNames.join(', ')}) at the BDT 1,499 bundle price (Save BDT 500).`;
+  }
+  return `Hi Jubayer, I'd like these 3 guides: ${selectedModuleNames.join(', ')}. Could you share the 3-guide bundle price and bKash/Nagad details?`;
 }
 
 /**
- * Fires optional Meta Pixel Lead event on WhatsApp click if configured.
+ * Builds a prefilled "Send this result to Jubayer" WhatsApp message from any diagnostic tool.
+ */
+export function buildToolResultToJubayerWaMessage(params: {
+  toolName: string;
+  currentBand?: string | number;
+  targetBand?: string | number;
+  bottleneck?: string;
+  examDate?: string;
+}): string {
+  const parts = [`Hi Jubayer, I just used the ${params.toolName} on IELTS DECODED.`];
+  if (params.currentBand) parts.push(`Current Band: ${params.currentBand}.`);
+  if (params.targetBand) parts.push(`Target Band: ${params.targetBand}.`);
+  if (params.bottleneck) parts.push(`My #1 Bottleneck: ${params.bottleneck}.`);
+  if (params.examDate) parts.push(`Exam Timeline: ${params.examDate}.`);
+  parts.push(`Which guide or batch should I start with to fix this?`);
+  return parts.join(' ');
+}
+
+/**
+ * Captures and persists the traffic source (?src=...) across the session.
+ */
+const TRAFFIC_SRC_KEY = 'ielts_decoded_traffic_src_v1';
+
+export function getTrafficSource(): string {
+  if (typeof window === 'undefined') return 'direct';
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const urlSrc = params.get('src') || params.get('utm_source');
+    if (urlSrc && urlSrc.trim()) {
+      const cleaned = urlSrc.trim().slice(0, 64);
+      window.localStorage.setItem(TRAFFIC_SRC_KEY, cleaned);
+      return cleaned;
+    }
+    return window.localStorage.getItem(TRAFFIC_SRC_KEY) || 'direct';
+  } catch {
+    return 'direct';
+  }
+}
+
+/**
+ * Builds a referral link with ?src=ref for sharing with a friend who needs Band 6.5+
+ */
+export function buildReferralUrl(pathOrHash = ''): string {
+  if (typeof window === 'undefined') return 'https://ieltsdecoded.com/?src=ref';
+  const origin = window.location.origin;
+  if (!pathOrHash) {
+    return `${origin}${window.location.pathname}?src=ref`;
+  }
+  if (pathOrHash.startsWith('#')) {
+    return `${origin}/?src=ref${pathOrHash}`;
+  }
+  const hasQuery = pathOrHash.includes('?');
+  return `${origin}${pathOrHash}${hasQuery ? '&src=ref' : '?src=ref'}`;
+}
+
+export type SiteAnalyticsEventName =
+  | 'page_view'
+  | 'guide_download'
+  | 'sample_chapter_download'
+  | 'writing_checker_complete'
+  | 'band_calculator_complete'
+  | 'study_plan_complete'
+  | 'whatsapp_click'
+  | 'option_fit_answered'
+  | 'waitlist_joined'
+  | 'paid_form_submitted'
+  | 'batch_application_submitted'
+  | 'result_submitted'
+  | 'mistake_dna_downloaded'
+  | 'referral_shared';
+
+const SITE_EVENTS_STORAGE_KEY = 'ielts_decoded_analytics_events_v1';
+
+export function trackSiteEvent(
+  eventName: SiteAnalyticsEventName,
+  meta: Record<string, string | number | boolean> = {}
+): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const src = getTrafficSource();
+    const raw = window.localStorage.getItem(SITE_EVENTS_STORAGE_KEY);
+    const list: Array<Record<string, unknown>> = raw ? JSON.parse(raw) : [];
+    list.unshift({
+      event: eventName,
+      src,
+      path: window.location.pathname,
+      timestamp: new Date().toISOString(),
+      ...meta,
+    });
+    window.localStorage.setItem(
+      SITE_EVENTS_STORAGE_KEY,
+      JSON.stringify(list.slice(0, 150))
+    );
+
+    if (SITE_CONFIG.tracking.enableLeadEvent && SITE_CONFIG.tracking.metaPixelId) {
+      const win = window as unknown as {
+        fbq?: (action: string, event: string, params?: Record<string, unknown>) => void;
+      };
+      if (typeof win.fbq === 'function') {
+        win.fbq('trackCustom', eventName, { src, ...meta });
+      }
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+/**
+ * Fires optional Meta Pixel Lead event on WhatsApp click if configured, plus stores analytics with src.
  */
 export function trackWaClick(keywordOrLabel: string): void {
+  trackSiteEvent('whatsapp_click', { button: keywordOrLabel });
   if (!SITE_CONFIG.tracking.enableLeadEvent || !SITE_CONFIG.tracking.metaPixelId) {
     return;
   }
   const win = window as unknown as { fbq?: (action: string, event: string, params?: Record<string, string>) => void };
   if (typeof win.fbq === 'function') {
-    win.fbq('track', 'Lead', { content_name: keywordOrLabel });
+    win.fbq('track', 'Lead', { content_name: keywordOrLabel, src: getTrafficSource() });
   }
 }
+

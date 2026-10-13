@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { SITE_CONFIG, wa, WaKeyword } from '../config';
 import { GuideModuleId } from '../guidesConfig';
 import { IconArrowUpRight } from './EditorialGraphics';
+import {
+  getLatestSavedStudentLead,
+  saveStoredLocalLead,
+  validateWhatsappPhone,
+} from './FreeRescueModal';
+import { MistakeDnaCardGenerator } from './MistakeDnaCard';
 import { RedPen } from './RedPen';
+import { EvaluatorTaskType, RedPenWritingShowcase } from './RedPenWritingShowcase';
+import { HumanWritingCheckSection } from './HumanWritingCheckSection';
 
 interface WritingCriterionResult {
   name: string;
@@ -88,8 +96,21 @@ export function ExaminerDeskPage({
   const [promptQuestion, setPromptQuestion] = useState<string>('');
   const [studentResponse, setStudentResponse] = useState<string>('');
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const isEvaluatingRef = useRef(false);
   const [writingError, setWritingError] = useState<string | null>(null);
   const [writingResult, setWritingResult] = useState<WritingEvaluationResult | null>(null);
+
+  // Student Details for Writing Evaluation (Required & Saved to Google Sheet)
+  const [fullName, setFullName] = useState<string>(() => {
+    const saved = getLatestSavedStudentLead();
+    return saved ? saved.fullName : '';
+  });
+  const [whatsappNumber, setWhatsappNumber] = useState<string>(() => {
+    const saved = getLatestSavedStudentLead();
+    return saved ? saved.normalizedWhatsapp : '';
+  });
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   // 4-Module Score Advisor State
   const [listeningBand, setListeningBand] = useState('6.5');
@@ -116,19 +137,52 @@ export function ExaminerDeskPage({
 
   const handleRunWritingEvaluation = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isEvaluatingRef.current || isEvaluating) return;
+
+    setNameError(null);
+    setPhoneError(null);
+    setWritingError(null);
+
+    const trimmedName = fullName.trim();
+    let hasValidationError = false;
+
+    if (!trimmedName || trimmedName.length < 2) {
+      setNameError('Please enter your full name.');
+      hasValidationError = true;
+    }
+
+    const phoneValidation = validateWhatsappPhone(whatsappNumber);
+    if (!phoneValidation.valid) {
+      setPhoneError(phoneValidation.error || 'Please enter a valid WhatsApp number (e.g. 017XXXXXXXX).');
+      hasValidationError = true;
+    }
+
     if (wordCount < 15) {
       setWritingError('Please write or paste at least 15 words so the examiner can evaluate your sentences.');
+      hasValidationError = true;
+    }
+
+    if (hasValidationError) {
       return;
     }
 
+    isEvaluatingRef.current = true;
     setIsEvaluating(true);
-    setWritingError(null);
 
     try {
+      // Save lead locally for instant pre-fill on subsequent actions or PDF downloads
+      saveStoredLocalLead({
+        normalizedWhatsapp: phoneValidation.normalized,
+        fullName: trimmedName,
+        submittedAt: new Date().toISOString(),
+      });
+
       const res = await fetch('/api/ai/writing-evaluation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          fullName: trimmedName,
+          whatsappNumber: phoneValidation.display,
           taskType,
           promptQuestion,
           studentResponse,
@@ -148,6 +202,7 @@ export function ExaminerDeskPage({
         err instanceof Error ? err.message : 'Something went wrong. Please try again.'
       );
     } finally {
+      isEvaluatingRef.current = false;
       setIsEvaluating(false);
     }
   };
@@ -324,20 +379,33 @@ export function ExaminerDeskPage({
                     Want to test it first?
                   </p>
                   <p className="mt-1.5 text-xs text-ink-muted leading-relaxed">
-                    Load a realistic Band 6.0 student draft to see how the examiner spots template traps and rewrites weak sentences.
+                    Load a realistic Band 6.0 student draft into the sheet, or inspect our interactive Red-Pen Before &amp; After example below.
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleLoadSample}
-                    className="mt-3 font-mono text-xs text-violet-pen hover:text-ink underline underline-offset-4 cursor-pointer"
-                  >
-                    Load Band 6.0 sample draft →
-                  </button>
+                  <div className="mt-3 flex flex-col items-start gap-2">
+                    <button
+                      type="button"
+                      onClick={handleLoadSample}
+                      className="font-mono text-xs text-violet-pen hover:text-ink underline underline-offset-4 cursor-pointer"
+                    >
+                      Load Band 6.0 sample draft →
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        document
+                          .getElementById('red-pen-sample-comparison')
+                          ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }
+                      className="font-mono text-xs text-ink-muted hover:text-ink underline underline-offset-4 cursor-pointer"
+                    >
+                      See interactive Band 6.0 → 7.5+ comparison ↓
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Right 8 Columns: Clean Submission Sheet */}
-              <div className="lg:col-span-8">
+              <div id="writing-submission-sheet" className="lg:col-span-8 scroll-mt-20">
                 <form
                   onSubmit={handleRunWritingEvaluation}
                   className="bg-surface-elevated border border-rule-strong p-6 sm:p-8"
@@ -460,6 +528,101 @@ export function ExaminerDeskPage({
                       }
                       className="w-full p-4 bg-paper border border-rule text-sm sm:text-base text-ink placeholder:text-ink-subtle focus:outline-none focus:border-ink leading-relaxed"
                     />
+                  </div>
+
+                  {/* 04. Student Details: Name & WhatsApp Number (Required & Stored to Google Sheet) */}
+                  <div className="mt-6 pt-5 border-t border-rule">
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="font-mono text-xs text-ink font-medium">
+                          04. Your Name &amp; WhatsApp Number <span className="text-examiner-red">*</span>
+                        </label>
+                        <span className="font-mono text-[11px] text-ink-muted">
+                          Official Evaluation Desk
+                        </span>
+                      </div>
+                      <p className="font-mono text-[11px] text-ink-muted mt-1 leading-relaxed">
+                        Enter your name and WhatsApp number below to generate your examiner report card and band breakdown.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Full Name */}
+                      <div>
+                        <label
+                          htmlFor="writing-student-name"
+                          className="block font-mono text-xs uppercase tracking-wider text-ink mb-1.5"
+                        >
+                          Full Name <span className="text-examiner-red">*</span>
+                        </label>
+                        <input
+                          id="writing-student-name"
+                          type="text"
+                          autoComplete="off"
+                          required
+                          value={fullName}
+                          onChange={(e) => {
+                            setFullName(e.target.value);
+                            if (nameError) setNameError(null);
+                          }}
+                          placeholder="Your Full Name"
+                          className={`w-full min-h-[44px] px-3.5 py-2.5 bg-paper border text-sm text-ink placeholder:text-ink-subtle focus:outline-none focus:border-violet-pen transition-colors ${
+                            nameError ? 'border-examiner-red' : 'border-rule'
+                          }`}
+                        />
+                        {nameError && (
+                          <p className="mt-1.5 font-mono text-xs text-examiner-red">
+                            {nameError}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* WhatsApp Number */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label
+                            htmlFor="writing-student-whatsapp"
+                            className="block font-mono text-xs uppercase tracking-wider text-ink"
+                          >
+                            WhatsApp Number <span className="text-examiner-red">*</span>
+                          </label>
+                          <span className="font-mono text-[11px] text-ink-muted">
+                            Bangladesh (+880) only
+                          </span>
+                        </div>
+                        <div className="flex items-stretch">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-ivory border-y border-l border-rule text-ink font-mono text-xs select-none shrink-0 min-h-[44px]">
+                            <span className="text-base leading-none" role="img" aria-label="Bangladesh flag">🇧🇩</span>
+                            <span className="font-medium text-ink-muted">+880</span>
+                          </span>
+                          <input
+                            id="writing-student-whatsapp"
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="off"
+                            required
+                            value={whatsappNumber}
+                            onChange={(e) => {
+                              setWhatsappNumber(e.target.value);
+                              if (phoneError) setPhoneError(null);
+                            }}
+                            placeholder="01XXXXXXXXX"
+                            className={`w-full min-h-[44px] px-3.5 py-2.5 bg-paper border text-sm text-ink placeholder:text-ink-subtle focus:outline-none focus:border-violet-pen transition-colors tabular-nums font-mono ${
+                              phoneError ? 'border-examiner-red' : 'border-rule'
+                            }`}
+                          />
+                        </div>
+                        {phoneError ? (
+                          <p className="mt-1.5 font-mono text-xs text-examiner-red">
+                            {phoneError}
+                          </p>
+                        ) : (
+                          <p className="mt-1 font-mono text-[11px] text-ink-muted">
+                            Active BD numbers only (013–019). No dummy/test numbers.
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {writingError && (
@@ -644,47 +807,146 @@ export function ExaminerDeskPage({
                     </ul>
                   </div>
 
-                  {/* Next Step Conversion Bridge */}
-                  <div className="pt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                    <div className="lg:col-span-7">
-                      <span className="block font-mono text-[11px] uppercase tracking-widest text-violet-pen mb-1.5">
-                        Recommended Next Step for Your Score
-                      </span>
-                      <h4 className="font-serif text-2xl text-ink font-normal">
-                        {writingResult.recommendedNextStep.offerTitle}
-                      </h4>
-                      <p className="mt-2 text-sm sm:text-base text-ink-muted leading-relaxed">
-                        {writingResult.recommendedNextStep.reason}
-                      </p>
-                    </div>
+                  {/* Next Step Conversion Bridge — Dynamic Score-to-Sale Funnel */}
+                  {(() => {
+                    const lowestCriterion =
+                      writingResult.criteria.length > 0
+                        ? [...writingResult.criteria].sort(
+                            (a, b) => ( parseFloat(a.band) || 6 ) - ( parseFloat(b.band) || 6 )
+                          )[0]
+                        : null;
+                    const customScoreWaMessage = `Hi Jubayer, I just checked my ${
+                      taskType === 'task1_report' ? 'Writing Task 1' : 'Writing Task 2'
+                    } in the IELTS DECODED Evaluator. My estimated score is Band ${
+                      writingResult.overallBand
+                    } (Target: Band ${targetBand})${
+                      lowestCriterion
+                        ? `, and my lowest criterion is ${lowestCriterion.name} (Band ${lowestCriterion.band})`
+                        : ''
+                    }. I'd like to know how to fix this before my exam.`;
 
-                    <div className="lg:col-span-5 flex flex-col sm:flex-row lg:flex-col gap-3 lg:items-end">
-                      <a
-                        href={wa(writingResult.recommendedNextStep.waKeyword)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => onWaAction(writingResult.recommendedNextStep.waKeyword)}
-                        className="group/btn w-full sm:w-auto min-h-[48px] px-6 py-3.5 inline-flex items-center justify-center gap-2 bg-violet-pen hover:bg-violet-pen-hover text-white text-sm font-medium transition-colors whitespace-nowrap"
-                      >
-                        <RedPen type="underline" seed={0} drawOnHover>
-                          Discuss this result with Jubayer on WhatsApp
-                        </RedPen>
-                        <IconArrowUpRight className="w-4 h-4" />
-                      </a>
+                    return (
+                      <div className="pt-8 space-y-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                          <div className="lg:col-span-7">
+                            <span className="block font-mono text-[11px] uppercase tracking-widest text-examiner-red mb-1.5">
+                              Why Theory Alone Cannot Fix Writing · Action Step for Band {writingResult.overallBand} → {targetBand}
+                            </span>
+                            <h4 className="font-serif text-2xl text-ink font-normal">
+                              {writingResult.recommendedNextStep.offerTitle}
+                            </h4>
+                            <p className="mt-2 text-sm sm:text-base text-ink-muted leading-relaxed">
+                              {writingResult.recommendedNextStep.reason}
+                            </p>
+                            <div className="mt-4 p-3.5 bg-ivory border border-rule font-mono text-xs text-ink leading-relaxed">
+                              <strong className="text-examiner-red uppercase">
+                                50% PDF Fee Credit Guarantee:
+                              </strong>{' '}
+                              Start with the 65-page Writing Self-Prep Guide (BDT 499) or All-4 Bundle (BDT 1,499) today—if you join the 12-Week Batch (BDT 7,999) or 1-to-1 Crash Course (BDT 9,999) within 14 days,{' '}
+                              <strong>50% of your PDF payment is deducted from your live course fee.</strong>
+                            </div>
+                          </div>
 
-                      <button
-                        type="button"
-                        onClick={() => onNavigateToGuides('writing')}
-                        className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 inline-flex items-center justify-center gap-2 border border-ink bg-paper hover:bg-ink hover:text-paper text-ink font-mono text-xs transition-colors whitespace-nowrap cursor-pointer"
-                      >
-                        <span>See the Writing Self-Prep Guide (BDT 499)</span>
-                        <span>→</span>
-                      </button>
-                    </div>
-                  </div>
+                          <div className="lg:col-span-5 flex flex-col gap-3 lg:items-end">
+                            <a
+                              href="#human-writing-check"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                document.getElementById('human-writing-check')?.scrollIntoView({ behavior: 'smooth' });
+                              }}
+                              className="group/btn w-full min-h-[48px] px-6 py-3.5 inline-flex items-center justify-center gap-2 bg-violet-pen hover:bg-violet-pen-hover text-white text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer"
+                            >
+                              <RedPen type="underline" seed={0} drawOnHover>
+                                Get My Essay Human-Checked by Jubayer — BDT 299
+                              </RedPen>
+                              <IconArrowUpRight className="w-4 h-4" />
+                            </a>
+
+                            <a
+                              href={wa(customScoreWaMessage)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => onWaAction(customScoreWaMessage)}
+                              className="w-full min-h-[44px] px-5 py-2.5 inline-flex items-center justify-center gap-2 border border-ink bg-paper hover:bg-ink hover:text-paper text-ink font-mono text-xs transition-colors whitespace-nowrap"
+                            >
+                              <span>Send Band {writingResult.overallBand} Result to WhatsApp</span>
+                              <IconArrowUpRight className="w-3.5 h-3.5" />
+                            </a>
+
+                            <button
+                              type="button"
+                              onClick={() => onNavigateToGuides('writing')}
+                              className="w-full min-h-[40px] px-4 py-2 inline-flex items-center justify-center gap-2 border border-rule bg-ivory hover:border-ink text-ink font-mono text-xs transition-colors whitespace-nowrap cursor-pointer"
+                            >
+                              <span>Get Writing Self-Prep Guide (BDT 499)</span>
+                              <span>→</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Item 13, 14, 17: Mistake DNA Card + Send to Jubayer + Referral Share */}
+                        <MistakeDnaCardGenerator
+                          toolName="IELTS Writing Evaluator"
+                          targetBand={targetBand}
+                          currentBand={writingResult.overallBand}
+                          bottleneckSkill={`Writing — ${
+                            lowestCriterion ? lowestCriterion.name : 'Task Response & Cohesion'
+                          }`}
+                          topErrorType={
+                            lowestCriterion
+                              ? `${lowestCriterion.name} (Band ${lowestCriterion.band}): ${lowestCriterion.specificFeedback}`
+                              : writingResult.recommendedNextStep.reason
+                          }
+                          kscTag="[K/S] Descriptor & Structure"
+                          actionFix={
+                            writingResult.priorityActionSteps[0] ||
+                            'Fix your lowest-scoring criterion with targeted paragraph drills.'
+                          }
+                          referralPath="/writing-checker"
+                        />
+
+                        <p className="font-mono text-[11px] text-ink-muted">
+                          AI estimate based on the public band descriptors. Individual results vary. Educational purposes only.
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
+
+            {/* =================================================================
+                PAID SERVICE UPGRADE: HUMAN WRITING CHECK — BDT 299
+                Placed immediately below the free AI Writing Examiner on /diagnostic
+               ================================================================= */}
+            <HumanWritingCheckSection
+              initialPrompt={promptQuestion}
+              initialResponse={studentResponse}
+              initialTaskType={taskType}
+              onNavigateHome={onNavigateHome}
+            />
+
+            {/* =================================================================
+                INTERACTIVE RED-PEN BEFORE & AFTER WRITING SAMPLE SHOWCASE
+               ================================================================= */}
+            <RedPenWritingShowcase
+              onOpenRescueModal={onOpenRescueModal}
+              onNavigateToGuides={onNavigateToGuides}
+              onNavigateHome={onNavigateHome}
+              onLoadSampleIntoEvaluator={(
+                selectedType: EvaluatorTaskType,
+                samplePrompt: string,
+                sampleDraft: string
+              ) => {
+                setTaskType(selectedType);
+                setPromptQuestion(samplePrompt);
+                setStudentResponse(sampleDraft);
+                setWritingError(null);
+                document
+                  .getElementById('writing-submission-sheet')
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+            />
           </div>
         </section>
       )}
@@ -939,6 +1201,22 @@ export function ExaminerDeskPage({
                       </button>
                     </div>
                   </div>
+
+                  {/* Item 13, 14, 17: Mistake DNA Card + Send to Jubayer + Referral Share */}
+                  <MistakeDnaCardGenerator
+                    toolName="IELTS Band Calculator & Bottleneck Advisor"
+                    targetBand={advisorTargetBand}
+                    currentBand={advisorResult.currentOverall}
+                    bottleneckSkill={advisorResult.primaryBottleneckModule}
+                    topErrorType={advisorResult.gapSummaryHeadline}
+                    kscTag="[S] Score Gap Bottleneck"
+                    actionFix={
+                      advisorResult.fourteenDayFocus[0] ||
+                      'Target your lowest sub-score first to unlock your overall band.'
+                    }
+                    examDate={examTimeline}
+                    referralPath="/band-calculator"
+                  />
                 </div>
               </div>
             )}
@@ -973,13 +1251,13 @@ export function ExaminerDeskPage({
 
             <div className="pt-6 md:pt-0 md:px-6">
               <span className="font-mono text-[11px] uppercase tracking-widest text-ink-muted">
-                Self-Study System · BDT 499
+                Self-Study System · BDT 499 / BDT 1,499 Bundle
               </span>
               <h3 className="mt-1.5 font-serif text-xl text-ink font-normal">
                 Module Self-Prep Guides
               </h3>
               <p className="mt-2 text-xs sm:text-sm text-ink-muted leading-relaxed">
-                Step-by-step frameworks for Reading, Writing, Listening, and Speaking (BDT 499 each or BDT 1,500 for all 4).
+                Step-by-step frameworks for Reading, Writing, Listening, and Speaking (BDT 499 each or BDT 1,499 for all 4 — Save BDT 500, plus 50% credit toward live courses).
               </p>
               <button
                 type="button"

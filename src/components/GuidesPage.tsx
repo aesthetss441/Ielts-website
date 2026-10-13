@@ -29,10 +29,12 @@ function GuideProductBlock({
   guide,
   index,
   onWaAction,
+  onDownloadSample,
 }: {
   guide: GuideData;
   index: number;
   onWaAction: (messageText: string) => void;
+  onDownloadSample?: (moduleId: GuideModuleId) => void;
 }) {
   const { images } = useResolvedGuideImages(guide);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
@@ -100,18 +102,30 @@ function GuideProductBlock({
                   </span>
                 </div>
 
-                <a
-                  href={wa(guide.whatsAppSingleText)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => onWaAction(guide.whatsAppSingleText)}
-                  className="group/btn min-h-[46px] px-5 py-3 inline-flex items-center justify-center gap-2 bg-violet-pen hover:bg-violet-pen-hover text-white text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
-                >
-                  <RedPen type="underline" seed={index} drawOnHover>
-                    Get on WhatsApp
-                  </RedPen>
-                  <IconArrowUpRight className="w-4 h-4" />
-                </a>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <a
+                    href={wa(guide.whatsAppSingleText)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => onWaAction(guide.whatsAppSingleText)}
+                    className="group/btn min-h-[46px] px-5 py-3 inline-flex items-center justify-center gap-2 bg-violet-pen hover:bg-violet-pen-hover text-white text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
+                  >
+                    <RedPen type="underline" seed={index} drawOnHover>
+                      Get on WhatsApp
+                    </RedPen>
+                    <IconArrowUpRight className="w-4 h-4" />
+                  </a>
+
+                  {onDownloadSample && (
+                    <button
+                      type="button"
+                      onClick={() => onDownloadSample(guide.id)}
+                      className="min-h-[46px] px-4 py-3 border border-rule-strong bg-paper hover:border-ink text-ink font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      Free 5-Page Sample ↓
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -221,15 +235,20 @@ export function GuidesPage({
   onWaAction,
   onNavigateHome,
   onOpenRescueModal,
+  onDownloadSample,
+  onOpenPaidModal,
 }: {
   onWaAction: (messageText: string) => void;
   onNavigateHome: (sectionHash?: string) => void;
   onOpenRescueModal?: (source: string) => void;
+  onDownloadSample?: (moduleId: GuideModuleId) => void;
+  onOpenPaidModal?: () => void;
 }) {
   const [weakestChoice, setWeakestChoice] = useState<
     GuideModuleId | 'unknown'
   >('reading');
   const [selectedBundleIds, setSelectedBundleIds] = useState<GuideModuleId[]>([
+    'listening',
     'reading',
     'writing',
     'speaking',
@@ -239,6 +258,10 @@ export function GuidesPage({
     setSelectedBundleIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
+  };
+
+  const selectAllBundleIds = () => {
+    setSelectedBundleIds(['listening', 'reading', 'writing', 'speaking']);
   };
 
   const selectedNames = SELF_PREP_GUIDES.filter((g) =>
@@ -263,7 +286,7 @@ export function GuidesPage({
               {SELF_PREP_SERIES_FACTS.seriesTitle.toUpperCase()} · {SELF_PREP_SERIES_FACTS.edition.toUpperCase()}
             </span>
             <span>
-              4 Standalone PDFs · {SELF_PREP_SERIES_FACTS.totalPages} Pages Total · BDT 499 Each
+              4 Standalone PDFs · {SELF_PREP_SERIES_FACTS.totalPages} Pages Total · BDT 499 Each (All 4 for BDT 1,499)
             </span>
           </div>
 
@@ -283,19 +306,19 @@ export function GuidesPage({
             <div>
               <span className="block text-[10px] text-ink-subtle uppercase">PRICE &amp; BUNDLE</span>
               <span className="font-medium">
-                BDT 499 per guide · Buy 3+ for bundle discount (confirmed on WhatsApp)
+                BDT 499 per guide · Complete 4-Guide Bundle: BDT 1,499 (Save BDT 500)
               </span>
             </div>
             <div>
-              <span className="block text-[10px] text-ink-subtle uppercase">100% ORIGINAL MATERIAL</span>
+              <span className="block text-[10px] text-ink-subtle uppercase">50% COURSE UPGRADE CREDIT</span>
               <span className="text-ink-muted">
-                Original exam-style practice written by Jubayer Siddiki (IELTS Overall 8).
+                Join any Live Program within 14 days and deduct 50% of your PDF payment from your course fee.
               </span>
             </div>
             <div>
-              <span className="block text-[10px] text-ink-subtle uppercase">FORMAT &amp; LICENCE</span>
+              <span className="block text-[10px] text-ink-subtle uppercase">FORMAT &amp; ORIGINALITY</span>
               <span className="text-ink-muted">
-                PDF only (no video, no audio recordings). Licensed for personal study.
+                100% original exam-style practice by Jubayer Siddiki (Overall 8). Instant PDF via WhatsApp.
               </span>
             </div>
           </div>
@@ -423,6 +446,7 @@ export function GuidesPage({
           guide={guide}
           index={idx}
           onWaAction={onWaAction}
+          onDownloadSample={onDownloadSample}
         />
       ))}
 
@@ -443,13 +467,14 @@ export function GuidesPage({
               .
             </h2>
             <p className="mt-2 text-sm sm:text-base text-ink-muted">
-              BDT 499 per guide. Buy 3 or more guides and a bundle discount applies—confirmed directly on WhatsApp.
+              BDT 499 per guide, or get all 4 guides (222 pages total) for <strong className="text-ink font-medium">BDT 1,499 — Save BDT 500</strong>. Plus, enjoy a 50% PDF fee credit if you upgrade to a live course within 14 days.
             </p>
           </div>
 
           <GuidesBundleBar
             selectedIds={selectedBundleIds}
             onToggleId={toggleBundleId}
+            onSelectAll={selectAllBundleIds}
             onWaAction={onWaAction}
           />
         </div>
@@ -501,13 +526,13 @@ export function GuidesPage({
             <div className="py-6 md:px-8 flex flex-col justify-between">
               <div>
                 <span className="font-mono text-xs text-violet-pen font-medium">
-                  02 · BDT 499 EACH
+                  02 · BDT 499 EACH · ALL 4 FOR BDT 1,499
                 </span>
                 <h3 className="mt-2 font-serif text-2xl text-ink font-normal">
-                  Self-prep guides (BDT 499)
+                  Self-prep guides (BDT 499 / 1,499 bundle)
                 </h3>
                 <p className="mt-2 text-sm text-ink-muted leading-relaxed">
-                  <strong className="text-ink">Study alone with a system.</strong> Standalone module workbooks (222 pages total) with drills, original practice, and self-marking rubrics.
+                  <strong className="text-ink">Study alone with a system.</strong> Standalone module workbooks (222 pages total) with drills, original practice, self-marking rubrics, and 50% credit toward live courses.
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-rule/60">
@@ -626,7 +651,30 @@ export function GuidesPage({
               <p className="mt-2 text-sm text-ink-muted leading-relaxed">
                 Your standalone PDF guide is sent directly to you in the chat so you can start the 10-minute diagnostic immediately.
               </p>
+              {onOpenPaidModal && (
+                <button
+                  type="button"
+                  onClick={onOpenPaidModal}
+                  className="mt-4 px-4 py-2 border border-ink bg-paper hover:bg-ink hover:text-paper text-ink font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  I’ve Paid — Submit TrxID →
+                </button>
+              )}
             </div>
+          </div>
+
+          {/* Value vs Price Retake Cost Block (Item 7) */}
+          <div className="mt-10 p-5 bg-ivory border border-rule flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-mono text-xs text-ink-muted">
+            <span>
+              <strong className="text-ink">Value vs. Retake Cost:</strong> One extra IELTS attempt costs ~BDT 22,500+ (check the current fee with British Council / IDP) plus weeks of delay — versus BDT 499 for a targeted guide or BDT 1,499 for all 4.
+            </span>
+            <button
+              type="button"
+              onClick={() => onNavigateHome('#free-guide')}
+              className="text-ink underline underline-offset-4 hover:text-violet-pen cursor-pointer shrink-0"
+            >
+              Can’t afford a program yet? Start with the free tools →
+            </button>
           </div>
         </div>
       </section>
@@ -646,7 +694,7 @@ export function GuidesPage({
                 </RedPen>
               </h2>
               <p className="mt-4 text-base sm:text-lg text-ink-muted max-w-[58ch]">
-                BDT 499 per guide, or pick 3+ for a bundle discount confirmed on WhatsApp.
+                BDT 499 per guide, or get all 4 guides for <strong className="text-ink font-medium">BDT 1,499 (Save BDT 500)</strong>—plus 50% credit toward any live course within 14 days.
               </p>
             </div>
 
@@ -691,12 +739,14 @@ export function GuidesPage({
             <p className="text-xs font-semibold text-ink truncate tabular-nums">
               {selectedNames.length === 0
                 ? 'Self-Prep Guides · BDT 499'
+                : selectedNames.length === 4
+                ? 'All 4 Guides Bundle · BDT 1,499'
                 : `BDT 499 × ${selectedNames.length} (${selectedNames.join(', ')})`}
             </p>
             <p className="text-[10px] text-examiner-red truncate">
-              {selectedNames.length >= 3
-                ? 'Bundle discount, confirmed on WhatsApp'
-                : 'Select 3+ guides for bundle discount'}
+              {selectedNames.length === 4
+                ? 'Save BDT 500 + 50% credit toward live courses'
+                : 'Get all 4 guides for BDT 1,499 (Save BDT 500)'}
             </p>
           </div>
 

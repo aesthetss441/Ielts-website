@@ -1,5 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { SITE_CONFIG, wa, getWaMessageText, trackWaClick, WaKeyword } from './config';
+import {
+  SITE_CONFIG,
+  wa,
+  getWaMessageText,
+  trackWaClick,
+  trackSiteEvent,
+  getTrafficSource,
+  WaKeyword,
+} from './config';
 import { GuideModuleId } from './guidesConfig';
 import {
   IconArrowUpRight,
@@ -20,7 +28,16 @@ import { StudentProofCarousel } from './components/StudentProofCarousel';
 import { LandingSelfPrepSection } from './components/LandingSelfPrepSection';
 import { GuidesPage } from './components/GuidesPage';
 import { ExaminerDeskPage } from './components/ExaminerDeskPage';
-import { FreeRescueModal } from './components/FreeRescueModal';
+import { StudyPlanPage } from './components/StudyPlanPage';
+import FreeRescueModal from './components/FreeRescueModal';
+import {
+  ActionModalType,
+  ConversionActionModal,
+  PriceLadderAndOptionFitSection,
+} from './components/ConversionModals';
+import { SpeakingMocksSection } from './components/SpeakingMocksSection';
+import { CaseStudyPage, TipsHubPage } from './components/CaseStudyAndTipsPages';
+import { syncClientSeoForRoute } from './seoRegistry';
 
 interface FaqItem {
   question: string;
@@ -29,34 +46,39 @@ interface FaqItem {
 
 const FAQ_ITEMS: FaqItem[] = [
   {
-    question: 'Is the guide really free?',
+    question: 'How do I pay for the BDT 499 Self-Prep Guides or Live Programs, and how fast is delivery?',
     answer:
-      'Yes. "IELTS Band 7+ Score Rescue" is a 38-page PDF guide. You can download it directly on this page.',
+      'Step 1: Message Jubayer on WhatsApp (01305-273703) so we can share the active bKash / Nagad / Bank transfer details directly in chat. Step 2: Once paid, submit your TrxID in the "I’ve Paid" form or send it in WhatsApp—your standalone PDF guide is delivered directly on WhatsApp within minutes.',
   },
   {
-    question: 'Which test is this for?',
+    question: 'What is the 50% PDF Fee Credit Guarantee?',
     answer:
-      'Academic IELTS. The reading strategies, writing Task 1 and Task 2 structures, and score diagnostics are built for Academic IELTS students.',
+      'If you buy any Self-Prep PDF Guide (BDT 499) or the Complete 4-Guide Bundle (BDT 1,499 — Save BDT 500) to study on your own first, and decide to join the 12-Week Live Batch or 1-to-1 Crash Course within 14 days, 50% of what you paid for your PDFs is deducted directly from your live course fee.',
   },
   {
-    question: 'What if my target is Band 6.0 or 6.5 instead of 7+?',
+    question: 'Which test is this for—Academic IELTS or General Training?',
     answer:
-      'You are in the right place. Many of our students start around Band 5.0–6.0 and need a solid 6.0, 6.5, or 7.0+ for university admission or visas. Both programs diagnose your exact starting band and focus on the specific marks needed to reach your personal target.',
+      'Academic IELTS. The reading strategies, writing Task 1 and Task 2 structures, and score diagnostics are built specifically for Academic IELTS candidates (though Task 2, Listening, and Speaking frameworks also apply to GT).',
   },
   {
-    question: 'What is the difference between the batch and the crash course?',
+    question: 'What if my starting level is Band 5.0 or 5.5, or my target is 6.5 instead of 7.5+?',
     answer:
-      'The 12-Week Band 7+ Roadmap Mentorship Program is a 3-month group batch capped at 10 students only (3 classes/week, 90 minutes each, Founding Batch offer BDT 7,999). The 1-Month 1-to-1 Live IELTS Crash Course is fully 1-to-1 live over 1 month (4 classes/week, 90 minutes each, BDT 9,999) for students who want personal pacing and faster turnaround.',
+      'You are in the right place. Many of our students start around Band 5.0–6.0 and work toward a solid 6.5 or 7.0+ for university admission, scholarships, or visas. Every tool and program diagnoses your exact starting band and focuses on the specific marks needed to work toward your personal target.',
   },
   {
-    question: 'Do I get personal feedback on Writing and Speaking?',
+    question: 'What is the difference between the free AI Writing Checker and personal feedback in the live programs?',
     answer:
-      'Yes. Both the 12-Week Mentorship Program and the 1-Month 1-to-1 Crash Course include personal writing correction, speaking feedback sessions, and weekly progress reports.',
+      'Our free online Writing Checker gives you an instant AI estimate based on the public band descriptors so you can spot obvious structure and grammar issues immediately. In the 12-Week Mentorship Batch and 1-to-1 Crash Course, Jubayer personally reviews your essays line by line and conducts live 1-to-1 Speaking evaluations.',
   },
   {
-    question: 'How do I join?',
+    question: 'Do I get class support, and what happens if a batch minimum is not reached?',
     answer:
-      'Step 1: Message us on WhatsApp at 01305273703. Step 2: Take the free diagnostic or free writing evaluation, or chat with Jubayer about your target score. Step 3: Confirm your seat.',
+      'Yes—live batch students get direct WhatsApp group support, homework checks, and weekly progress tracking. Each cohort is capped at 10 students only; if a scheduled batch ever does not reach its minimum cohort size, your start date is either converted into 1-to-1 kickstart sessions or refunded in full.',
+  },
+  {
+    question: 'Is the 38-page Score Rescue guide and 5-page module sample really free?',
+    answer:
+      'Yes. Both the 38-page "IELTS Band 7+ Score Rescue" guide and the 5-page sample chapters for Listening, Reading, Writing, and Speaking are 100% free instant PDF downloads.',
   },
 ];
 
@@ -203,10 +225,17 @@ function ExpandableFeatureList({
 }
 
 export default function App() {
-  const [currentRoute, setCurrentRoute] = useState<'home' | 'guides' | 'diagnostic'>(() => {
+  const [currentRoute, setCurrentRoute] = useState<
+    'home' | 'guides' | 'diagnostic' | 'study-plan' | 'case-study' | 'tips'
+  >(() => {
     if (typeof window !== 'undefined') {
-      if (window.location.pathname === '/guides') return 'guides';
-      if (window.location.pathname === '/diagnostic') return 'diagnostic';
+      const p = window.location.pathname;
+      if (p === '/guides') return 'guides';
+      if (p === '/diagnostic' || p === '/writing-checker' || p === '/band-calculator')
+        return 'diagnostic';
+      if (p === '/study-plan') return 'study-plan';
+      if (p === '/case-study') return 'case-study';
+      if (p === '/tips') return 'tips';
     }
     return 'home';
   });
@@ -222,19 +251,47 @@ export default function App() {
   const [copiedState, setCopiedState] = useState<'none' | 'message' | 'number'>('none');
   const [rescueModalOpen, setRescueModalOpen] = useState(false);
   const [rescueModalSource, setRescueModalSource] = useState('Hero CTA');
+  const [sampleModuleId, setSampleModuleId] = useState<GuideModuleId | null>(null);
+  const [activeActionModal, setActiveActionModal] = useState<ActionModalType>(null);
+  const [actionModalDefaultProduct, setActionModalDefaultProduct] = useState<string>(
+    'Complete 4-Guide Bundle (BDT 1,499)'
+  );
 
-  const openRescueModal = (source: string) => {
+  const openRescueModal = (source: string, sampleMod: GuideModuleId | null = null) => {
     setRescueModalSource(source);
+    setSampleModuleId(sampleMod);
     setRescueModalOpen(true);
   };
 
-  // Browser back/forward popstate listener for '/', '/guides', and '/diagnostic'
+  const openActionModal = (type: ActionModalType, defaultProduct?: string) => {
+    if (defaultProduct) setActionModalDefaultProduct(defaultProduct);
+    setActiveActionModal(type);
+  };
+
+  // Capture ?src=, sync client-side SEO meta/canonical/JSON-LD, and log page_view
+  useEffect(() => {
+    getTrafficSource();
+    if (typeof window !== 'undefined') {
+      syncClientSeoForRoute(window.location.pathname);
+    }
+    trackSiteEvent('page_view', { route: currentRoute });
+  }, [currentRoute]);
+
+  // Browser back/forward popstate listener
   useEffect(() => {
     const handlePopState = () => {
-      if (window.location.pathname === '/guides') {
+      const p = window.location.pathname;
+      syncClientSeoForRoute(p);
+      if (p === '/guides') {
         setCurrentRoute('guides');
-      } else if (window.location.pathname === '/diagnostic') {
+      } else if (p === '/diagnostic' || p === '/writing-checker' || p === '/band-calculator') {
         setCurrentRoute('diagnostic');
+      } else if (p === '/study-plan') {
+        setCurrentRoute('study-plan');
+      } else if (p === '/case-study') {
+        setCurrentRoute('case-study');
+      } else if (p === '/tips') {
+        setCurrentRoute('tips');
       } else {
         setCurrentRoute('home');
       }
@@ -247,6 +304,33 @@ export default function App() {
     if (typeof window !== 'undefined') {
       window.history.pushState({}, '', '/diagnostic');
       setCurrentRoute('diagnostic');
+      setMobileMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const navigateToStudyPlan = () => {
+    if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', '/study-plan');
+      setCurrentRoute('study-plan');
+      setMobileMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const navigateToCaseStudy = () => {
+    if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', '/case-study');
+      setCurrentRoute('case-study');
+      setMobileMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const navigateToTips = () => {
+    if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', '/tips');
+      setCurrentRoute('tips');
       setMobileMenuOpen(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -292,6 +376,8 @@ export default function App() {
       document.title = 'IELTS DECODED Guides: 4-Module Self-Prep Books (Listening, Reading, Writing, Speaking)';
     } else if (currentRoute === 'diagnostic') {
       document.title = 'IELTS DECODED Examiner Desk: AI Writing Evaluation & Band Score Diagnostic';
+    } else if (currentRoute === 'study-plan') {
+      document.title = 'IELTS DECODED Study Plan Builder: Personalized Day-by-Day IELTS Curriculum';
     } else {
       document.title = 'IELTS DECODED: Academic IELTS Mentorship, Self-Prep Guides & Band 7+ Diagnostic';
     }
@@ -391,6 +477,8 @@ export default function App() {
       ? 'guides'
       : currentRoute === 'diagnostic'
       ? 'diagnostic'
+      : currentRoute === 'study-plan'
+      ? 'study-plan'
       : SECTION_INDEX.find((s) => s.id === activeSection)?.navGroup || '';
 
   // Floating WhatsApp button uses "GUIDES_GENERAL" on `/guides` ("Hi Jubayer, I'm interested in the self-prep guides.")
@@ -460,15 +548,16 @@ export default function App() {
             <BrandLogo size="md" />
           </a>
 
-          {/* Zone 2: Primary Navigation Links */}
-          <nav aria-label="Primary" className="hidden md:flex items-center gap-6 text-sm text-ink-muted">
+          {/* Zone 2: Primary Navigation Links (Includes "Guides" + "Writing Checker" + "Study Plan") */}
+          <nav aria-label="Primary" className="hidden md:flex items-center gap-5 lg:gap-6 text-sm text-ink-muted">
             {[
-              { id: 'free-guide', label: 'Free guide', href: '#free-guide', route: null as null | 'guides' | 'diagnostic', seed: 0 },
-              { id: 'guides', label: 'Guides', href: '/guides', route: 'guides' as const, seed: 1 },
-              { id: 'diagnostic', label: 'Writing checker', href: '/diagnostic', route: 'diagnostic' as const, seed: 2 },
-              { id: 'programs', label: 'Programs', href: '#programs', route: null as null | 'guides' | 'diagnostic', seed: 3 },
-              { id: 'reviews', label: 'Student proof', href: '#reviews', route: null as null | 'guides' | 'diagnostic', seed: 0 },
-              { id: 'about', label: 'About', href: '#about', route: null as null | 'guides' | 'diagnostic', seed: 1 },
+              { id: 'free-guide', label: 'Free Guide', href: '#free-guide', route: null as null | 'guides' | 'diagnostic' | 'study-plan', seed: 0 },
+              { id: 'study-plan', label: 'Study Plan', href: '/study-plan', route: 'study-plan' as const, seed: 3 },
+              { id: 'diagnostic', label: 'Writing Checker', href: '/diagnostic', route: 'diagnostic' as const, seed: 1 },
+              { id: 'guides', label: 'Guides', href: '/guides', route: 'guides' as const, seed: 2 },
+              { id: 'programs', label: 'Programs', href: '#programs', route: null as null | 'guides' | 'diagnostic' | 'study-plan', seed: 3 },
+              { id: 'about', label: 'About', href: '#about', route: null as null | 'guides' | 'diagnostic' | 'study-plan', seed: 0 },
+              { id: 'reviews', label: 'Reviews', href: '#reviews', route: null as null | 'guides' | 'diagnostic' | 'study-plan', seed: 1 },
             ].map((nav) => {
               const isActive = activeNavGroup === nav.id;
               return (
@@ -481,6 +570,8 @@ export default function App() {
                       navigateToGuides();
                     } else if (nav.route === 'diagnostic') {
                       navigateToDiagnostic();
+                    } else if (nav.route === 'study-plan') {
+                      navigateToStudyPlan();
                     } else if (currentRoute !== 'home') {
                       navigateHome(nav.href);
                     } else {
@@ -556,13 +647,14 @@ export default function App() {
           <div className="md:hidden border-t border-rule bg-paper px-4 pt-3 pb-6">
             <nav aria-label="Mobile navigation" className="flex flex-col divide-y divide-rule/70">
               {[
-                { label: 'Free guide', href: '#free-guide', route: null as null | 'guides' | 'diagnostic' },
-                { label: 'Guides (BDT 499)', href: '/guides', route: 'guides' as const },
-                { label: 'Writing Checker & Score Advisor', href: '/diagnostic', route: 'diagnostic' as const },
-                { label: 'Programs', href: '#programs', route: null as null | 'guides' | 'diagnostic' },
-                { label: 'Student proof', href: '#reviews', route: null as null | 'guides' | 'diagnostic' },
-                { label: 'About', href: '#about', route: null as null | 'guides' | 'diagnostic' },
-                { label: 'FAQ', href: '#faq', route: null as null | 'guides' | 'diagnostic' },
+                { label: 'Free Guide', href: '#free-guide', route: null as null | 'guides' | 'diagnostic' | 'study-plan' },
+                { label: 'Free Study Plan Builder', href: '/study-plan', route: 'study-plan' as const },
+                { label: 'Free Writing Checker & Score Advisor', href: '/diagnostic', route: 'diagnostic' as const },
+                { label: 'Self-Prep Guides (BDT 499)', href: '/guides', route: 'guides' as const },
+                { label: 'Programs', href: '#programs', route: null as null | 'guides' | 'diagnostic' | 'study-plan' },
+                { label: 'About Jubayer', href: '#about', route: null as null | 'guides' | 'diagnostic' | 'study-plan' },
+                { label: 'Student Proof', href: '#reviews', route: null as null | 'guides' | 'diagnostic' | 'study-plan' },
+                { label: 'FAQ', href: '#faq', route: null as null | 'guides' | 'diagnostic' | 'study-plan' },
               ].map((item) => (
                 <a
                   key={item.href}
@@ -573,6 +665,8 @@ export default function App() {
                       navigateToGuides();
                     } else if (item.route === 'diagnostic') {
                       navigateToDiagnostic();
+                    } else if (item.route === 'study-plan') {
+                      navigateToStudyPlan();
                     } else {
                       navigateHome(item.href);
                     }
@@ -601,14 +695,22 @@ export default function App() {
       </header>
 
       {/* =====================================================================
-          MAIN VIEW: `/guides`, `/diagnostic`, OR LANDING PAGE
+          MAIN VIEW: `/guides`, `/diagnostic`, `/study-plan`, `/case-study`, `/tips`, OR LANDING PAGE
          ===================================================================== */}
-      {currentRoute === 'guides' ? (
+      {currentRoute === 'case-study' ? (
+        <CaseStudyPage />
+      ) : currentRoute === 'tips' ? (
+        <TipsHubPage />
+      ) : currentRoute === 'guides' ? (
         <main>
           <GuidesPage
             onWaAction={handleWaAction}
             onNavigateHome={navigateHome}
-            onOpenRescueModal={openRescueModal}
+            onOpenRescueModal={(src) => openRescueModal(src, null)}
+            onDownloadSample={(modId) =>
+              openRescueModal(`Guides Page - ${modId} 5-Page Sample`, modId)
+            }
+            onOpenPaidModal={() => openActionModal('paid_verification')}
           />
         </main>
       ) : currentRoute === 'diagnostic' ? (
@@ -617,13 +719,23 @@ export default function App() {
             onWaAction={handleWaAction}
             onNavigateHome={navigateHome}
             onNavigateToGuides={navigateToGuides}
-            onOpenRescueModal={openRescueModal}
+            onOpenRescueModal={(src) => openRescueModal(src, null)}
+          />
+        </main>
+      ) : currentRoute === 'study-plan' ? (
+        <main>
+          <StudyPlanPage
+            onWaAction={handleWaAction}
+            onNavigateHome={navigateHome}
+            onNavigateToGuides={navigateToGuides}
+            onNavigateToDiagnostic={navigateToDiagnostic}
+            onOpenRescueModal={(src) => openRescueModal(src, null)}
           />
         </main>
       ) : (
         <main>
           {/* =====================================================================
-              1. HERO (Founder-led, asymmetric 12-col, NOT centered)
+              1. HERO (Item 2 & 3: Student's problem, "work toward", Primary CTA: Free Guide, Secondary CTA: Free Writing Check, 1-line Instructor Card under CTAs)
              ===================================================================== */}
           <section className="pt-12 sm:pt-20 lg:pt-24 pb-16 border-b border-rule">
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -631,54 +743,62 @@ export default function App() {
                 {/* Left 7 Columns: Editorial Proposition */}
                 <div className="lg:col-span-7 pt-2">
                   <p className="font-mono text-[11px] text-ink-muted tracking-widest uppercase mb-6">
-                    Academic IELTS Diagnostic &amp; Mentorship · Target Band 6.0, 6.5 &amp; 7.0+
+                    Academic IELTS Diagnostic &amp; Mentorship · Work Toward Band 6.0, 6.5, 7.0 or 7.5+
                   </p>
 
                   <h1 className="font-serif text-display-hero font-normal text-ink">
-                    You don’t need another mock test. You need to know{' '}
+                    Stuck on the same band? Find{' '}
                     <RedPen type="double-underline" seed={0}>
-                      why you’re losing marks.
+                      exactly why you’re losing marks.
                     </RedPen>
                   </h1>
 
                   <p className="mt-7 text-base sm:text-lg text-ink-muted leading-relaxed max-w-[62ch]">
-                    A simple guide to finding what’s actually holding your IELTS score back—whether you need Band 6.5 for admission or Band 7.0+ for scholarships—and what to do about it.
+                    Stop taking blind mock tests. Whether you are working toward Band 6.5 for university admission or Band 7.0+ for scholarships and visas, diagnose the exact{' '}
+                    <strong className="text-ink font-medium">[K] Knowledge</strong>,{' '}
+                    <strong className="text-ink font-medium">[S] Skill</strong>, or{' '}
+                    <strong className="text-ink font-medium">[C] Care</strong> mistakes holding your score back—and fix them step by step.
                   </p>
 
-                  {/* Primary Button + Secondary Text Link */}
-                  <div className="mt-9 sm:mt-11 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                  {/* Primary CTA: Free Guide | Secondary CTA: Free Writing Check */}
+                  <div className="mt-9 sm:mt-11 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
                     <button
                       type="button"
                       onClick={() => openRescueModal('Hero - Download the free Score Rescue guide')}
                       className="group/btn min-h-[48px] px-6 py-3.5 inline-flex items-center justify-center gap-2 bg-violet-pen hover:bg-violet-pen-hover text-white text-sm sm:text-base font-medium transition-colors whitespace-nowrap cursor-pointer"
                     >
                       <RedPen type="underline" seed={2} drawOnHover>
-                        Download the free Score Rescue guide
+                        Download Free Rescue Guide
                       </RedPen>
                       <IconArrowUpRight className="w-4 h-4" />
                     </button>
 
                     <a
-                      href="#programs"
-                      className="group/btn min-h-[44px] inline-flex items-center gap-2 text-sm font-medium text-ink hover:text-violet-pen transition-colors whitespace-nowrap"
+                      href="/diagnostic"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateToDiagnostic();
+                      }}
+                      className="group/btn min-h-[48px] px-5 py-3 inline-flex items-center justify-center gap-2 border border-ink bg-paper hover:bg-ink hover:text-paper text-sm font-medium text-ink transition-colors whitespace-nowrap"
                     >
                       <RedPen type="underline" seed={3} drawOnHover>
-                        See the programs
+                        Free Writing Check
                       </RedPen>
-                      <IconArrowDown className="w-4 h-4" />
+                      <IconArrowUpRight className="w-4 h-4" />
                     </a>
                   </div>
 
-                  {/* Margin Note Annotation */}
-                  <div className="mt-12 pt-6 border-t border-rule/80 flex items-start gap-3 max-w-lg">
-                    <RedPen type="arrow" seed={1} className="shrink-0 mt-0.5" />
-                    <p className="font-mono text-[11px] text-ink-muted leading-relaxed">
-                      Free 38-page PDF ·{' '}
-                      <RedPen type="bracket" seed={0} className="text-ink font-medium px-1">
-                        Instant direct download
-                      </RedPen>{' '}
-                      — no login or waiting required.
-                    </p>
+                  {/* Item 3: One-line Instructor Card directly under the CTAs (Full bio only in About section) */}
+                  <div className="mt-8 pt-5 border-t border-rule/80 flex flex-wrap items-center justify-between gap-2 font-mono text-xs text-ink-muted">
+                    <span>
+                      Guided by <strong className="text-ink">Jubayer Siddiki</strong> · IELTS Overall 8 (L8.5 · R8.5 · W7 · S7) · Author of IELTS DECODED
+                    </span>
+                    <a
+                      href="#about"
+                      className="text-violet-pen underline underline-offset-4 hover:text-ink"
+                    >
+                      Full bio ↓
+                    </a>
                   </div>
                 </div>
 
@@ -688,23 +808,9 @@ export default function App() {
                     imageUrl={SITE_CONFIG.founder.heroPhotoUrl}
                     alt="Jubayer Siddiki, Founder and Instructor at IELTS DECODED"
                     aspectRatioClass="aspect-[4/5]"
-                    caption="Jubayer Siddiki · IELTS Overall 8 · L8.5 | R8.5 | W7 | S7"
+                    caption="Jubayer Siddiki · Guiding students toward their target IELTS band"
                   />
                 </div>
-              </div>
-
-              {/* Thin Credentials Rule under Hero */}
-              <div className="mt-14 pt-6 border-t border-rule flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] sm:text-xs font-mono text-ink-muted">
-                {SITE_CONFIG.founder.credentials.map((cred, index) => (
-                  <React.Fragment key={cred}>
-                    {index > 0 && (
-                      <span className="text-ink-subtle select-none" aria-hidden="true">
-                        ·
-                      </span>
-                    )}
-                    <span className="text-ink">{cred}</span>
-                  </React.Fragment>
-                ))}
               </div>
             </div>
           </section>
@@ -753,9 +859,55 @@ export default function App() {
                       If you get 26 or 27 in Reading three times in a row, taking a fourth mock test tonight will not move your score to 34. The same Reading score again and again means you are repeating the exact same mistake patterns under time pressure.
                     </p>
                     <p>
-                      You might be losing four marks on Matching Headings because you read the first line and guess, three marks on True / False / Not Given because you confuse "False" with "Not Given", and two marks from copying plural words as singular. Until you separate a <strong className="text-ink font-medium">Knowledge gap</strong> from a <strong className="text-ink font-medium">Strategy error</strong> or a <strong className="text-ink font-medium">Careless slip</strong>, you are practising in the dark.
+                      You might be losing four marks on Matching Headings because you read the first line and guess, three marks on True / False / Not Given because you confuse "False" with "Not Given", and two marks from copying plural words as singular. Until you separate a <strong className="text-ink font-medium">Knowledge gap [K]</strong> from a <strong className="text-ink font-medium">Skill/Strategy error [S]</strong> or a <strong className="text-ink font-medium">Careless slip [C]</strong>, you are practising in the dark.
                     </p>
                   </div>
+                </div>
+              </div>
+
+              {/* Prominent Editorial Feature Banner for Common Mistakes & Tips (/tips) & Case Study (/case-study) */}
+              <div className="mt-12 p-6 sm:p-7 bg-paper border-2 border-ink grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <div className="lg:col-span-8">
+                  <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-examiner-red font-semibold mb-1.5">
+                    <span>COMMON IELTS MISTAKES &amp; TIPS</span>
+                    <span aria-hidden="true">·</span>
+                    <span>WRITING · READING · SPEAKING · LISTENING</span>
+                  </div>
+                  <h3 className="font-serif text-xl sm:text-2xl text-ink font-normal">
+                    Want to see real{' '}
+                    <RedPen type="underline" seed={4}>
+                      Before → After Mistake Fixes
+                    </RedPen>{' '}
+                    right now?
+                  </h3>
+                  <p className="mt-2 text-xs sm:text-sm text-ink-muted leading-relaxed max-w-[64ch]">
+                    Browse our <strong className="text-ink font-medium">Most Common IELTS Mistakes &amp; Tips</strong> for bite-sized Band 6.0 → 7.5+ fixes across all 4 modules (Task 2 memorized intros, T/F/NG qualifier traps, Speaking Part 2 45-second freezes, Listening Part 3 distractors), or read the full <strong className="text-ink font-medium">Band 6.0 → 7.5+ Essay Case Study</strong>.
+                  </p>
+                </div>
+
+                <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col gap-2.5 lg:items-end">
+                  <a
+                    href="/tips"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigateToTips();
+                    }}
+                    className="w-full sm:w-auto min-h-[46px] px-5 py-3 bg-violet-pen hover:bg-violet-pen-hover text-white font-mono text-xs uppercase tracking-wider inline-flex items-center justify-center gap-2 transition-colors whitespace-nowrap"
+                  >
+                    <span>View Common Mistakes &amp; Tips</span>
+                    <IconArrowUpRight className="w-3.5 h-3.5" />
+                  </a>
+                  <a
+                    href="/case-study"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigateToCaseStudy();
+                    }}
+                    className="w-full sm:w-auto min-h-[40px] px-4 py-2 border border-ink bg-ivory hover:bg-ink hover:text-paper text-ink font-mono text-xs uppercase tracking-wider inline-flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
+                  >
+                    <span>Read Band 6.0 → 7.5+ Case Study</span>
+                    <IconArrowUpRight className="w-3.5 h-3.5" />
+                  </a>
                 </div>
               </div>
             </div>
@@ -905,6 +1057,44 @@ export default function App() {
                   </div>
                 </div>
               </div>
+
+              {/* Third Free Tool Under Guide: Personalized Day-by-Day Study Plan Builder */}
+              <div className="mt-10 pt-10 border-t border-rule">
+                <div className="p-6 sm:p-8 bg-ivory border border-rule-strong grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                  <div className="lg:col-span-8">
+                    <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] text-examiner-red mb-2">
+                      <span>FREE INTERACTIVE CURRICULUM TOOL</span>
+                      <span aria-hidden="true">·</span>
+                      <span>20, 30, 45, 60, 90 OR CUSTOM DAYS</span>
+                    </div>
+                    <h3 className="font-serif text-xl sm:text-2xl text-ink font-normal">
+                      Don’t know what to study each day?{' '}
+                      <RedPen type="underline" seed={3}>
+                        Build your personalized IELTS study plan.
+                      </RedPen>
+                    </h3>
+                    <p className="mt-2 text-sm text-ink-muted leading-relaxed max-w-[64ch]">
+                      Select your starting level, target band, preparation duration, and module trouble spots to generate a complete Day 1 to Day N study schedule—with exact question types, step-by-step methods, and Mistake DNA error logging.
+                    </p>
+                  </div>
+
+                  <div className="lg:col-span-4 flex lg:justify-end">
+                    <a
+                      href="/study-plan"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateToStudyPlan();
+                      }}
+                      className="group/btn w-full sm:w-auto min-h-[48px] px-6 py-3.5 inline-flex items-center justify-center gap-2 bg-paper hover:bg-ink text-ink hover:text-paper border border-ink font-mono text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
+                    >
+                      <RedPen type="underline" seed={1} drawOnHover>
+                        Build Your Free Study Plan
+                      </RedPen>
+                      <IconArrowUpRight className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -914,6 +1104,9 @@ export default function App() {
           <LandingSelfPrepSection
             onWaAction={handleWaAction}
             onNavigateToGuides={navigateToGuides}
+            onDownloadSample={(modId) =>
+              openRescueModal(`Landing Self-Prep - ${modId} 5-Page Sample`, modId)
+            }
           />
 
           {/* Hand-scribbled red divider between major sections */}
@@ -928,9 +1121,11 @@ export default function App() {
             <StudentProofCarousel
               items={SITE_CONFIG.reviews.items}
               writtenQuotes={SITE_CONFIG.reviews.writtenQuotes}
+              videoTestimonials={SITE_CONFIG.reviews.videoTestimonials}
               videoTestimonial={SITE_CONFIG.reviews.videoTestimonial}
               ratingBadgeText={SITE_CONFIG.reviews.ratingBadgeText}
               sectionKicker="04. Student Proof"
+              onOpenShareResultModal={() => openActionModal('share_result')}
             />
           )}
 
@@ -1052,30 +1247,20 @@ export default function App() {
                     }}
                     className="text-ink font-medium underline underline-offset-4 hover:text-violet-pen"
                   >
-                    Try a self-prep guide (BDT 499) →
-                  </a>
+                    Try a self-prep guide (BDT 499 each · All 4 for BDT 1,499) →
+                  </a>{' '}
+                  <span className="text-examiner-red font-medium">
+                    (50% of your PDF fee is credited if you join a live course within 14 days)
+                  </span>
                 </p>
               </div>
 
-              {/* "How they differ" + Two-line "Which one is for you?" ABOVE the program cards */}
-              <div className="mb-10 p-5 sm:p-6 bg-ivory border border-rule">
-                <p className="text-sm sm:text-base text-ink leading-relaxed">
-                  <strong className="font-medium">How they differ:</strong> The 12-Week Program is a group batch with structure and a small 10-student cohort over three months, while the Crash Course is fully personal 1-to-1 and faster over one month.
-                </p>
-
-                <div className="mt-4 pt-4 border-t border-rule/80">
-                  <p className="font-mono text-[11px] uppercase tracking-widest text-ink-muted mb-2">
-                    Which one is for you?
-                  </p>
-                  <div className="space-y-1.5 text-sm sm:text-base text-ink-muted">
-                    <p>
-                      <strong className="text-ink font-medium">Choose the 12-Week Batch</strong> if you have 2–3 months before your exam and want a step-by-step group routine from Band 5.5/6.0 up to 6.5 or 7.0+.
-                    </p>
-                    <p>
-                      <strong className="text-ink font-medium">Choose the 1-Month 1-to-1 Crash Course</strong> if your exam is close, you are stuck at 5.5–6.5, or you want private sessions scheduled around your own weaknesses.
-                    </p>
-                  </div>
-                </div>
+              {/* Item 4 & 5: "Which option fits me?" Diagnostic Selector + 5-Rung Price Ladder */}
+              <div className="mb-12">
+                <PriceLadderAndOptionFitSection
+                  onOpenRescueModal={openRescueModal}
+                  onOpenActionModal={openActionModal}
+                />
               </div>
 
               {/* Two Offer Cards Side by Side on Desktop, Stacked on Mobile */}
@@ -1159,18 +1344,29 @@ export default function App() {
                       </div>
                     </div>
 
-                    <a
-                      href={wa('ENROLL')}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => handleWaAction('ENROLL')}
-                      className="group/btn w-full min-h-[48px] px-6 py-3.5 inline-flex items-center justify-center gap-2 bg-violet-pen hover:bg-violet-pen-hover text-white text-sm sm:text-base font-medium transition-colors whitespace-nowrap"
-                    >
-                      <RedPen type="underline" seed={2} drawOnHover>
-                        Ask about ENROLL
-                      </RedPen>
-                      <IconArrowUpRight className="w-4 h-4" />
-                    </a>
+                    <div className="flex flex-col sm:flex-row gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => openActionModal('batch_application')}
+                        className="group/btn flex-1 min-h-[48px] px-5 py-3.5 inline-flex items-center justify-center gap-2 bg-violet-pen hover:bg-violet-pen-hover text-white text-sm font-medium transition-colors whitespace-nowrap cursor-pointer"
+                      >
+                        <RedPen type="underline" seed={2} drawOnHover>
+                          Apply for 12-Week Batch
+                        </RedPen>
+                        <IconArrowUpRight className="w-4 h-4" />
+                      </button>
+
+                      <a
+                        href={wa('ENROLL')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => handleWaAction('ENROLL')}
+                        className="min-h-[48px] px-4 py-3.5 inline-flex items-center justify-center gap-1.5 border border-ink bg-paper hover:bg-ink hover:text-paper text-ink font-mono text-xs uppercase tracking-wider transition-colors whitespace-nowrap"
+                      >
+                        <span>Or Ask on WhatsApp</span>
+                        <IconArrowUpRight className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
                   </div>
                 </article>
 
@@ -1267,6 +1463,61 @@ export default function App() {
                     </a>
                   </div>
                 </article>
+              </div>
+
+              {/* =================================================================
+                  PAID SERVICE: THREE LIVE IELTS SPEAKING MOCKS — BDT 499
+                  Introductory offer conducted on Google Meet with individual feedback
+                 ================================================================= */}
+              <SpeakingMocksSection onNavigateHome={navigateHome} />
+
+              {/* =================================================================
+                  CONVERSION COMPARISON: NEGATIVE GUARANTEE + WHY THEORY ALONE FAILS
+                 ================================================================= */}
+              <div className="mt-12 border border-rule-strong bg-ivory p-6 sm:p-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 divide-y lg:divide-y-0 lg:divide-x divide-rule">
+                  {/* Column 1: The Cost of Retaking IELTS (Negative Guarantee) */}
+                  <div className="lg:col-span-4 lg:pr-6">
+                    <span className="block font-mono text-[11px] uppercase tracking-widest text-examiner-red font-semibold">
+                      01 · The Cost of Guessing
+                    </span>
+                    <h3 className="mt-2 font-serif text-xl sm:text-2xl text-ink font-normal">
+                      1 IELTS Retake Fee:{' '}
+                      <RedPen type="underline" seed={0}>
+                        BDT 22,500+
+                      </RedPen>
+                    </h3>
+                    <p className="mt-2.5 text-xs sm:text-sm text-ink-muted leading-relaxed">
+                      Missing your target sub-band by 0.5 in Writing or Reading costs <strong className="text-ink font-medium">BDT 22,500+ in official retake fees</strong>—plus 6 to 12 months of delayed university intake or visa processing. Fixing the exact reason you lose marks before exam day costs a fraction of one retake.
+                    </p>
+                  </div>
+
+                  {/* Column 2: Why Theory Alone Fails for Writing & Speaking */}
+                  <div className="pt-6 lg:pt-0 lg:col-span-4 lg:px-6">
+                    <span className="block font-mono text-[11px] uppercase tracking-widest text-violet-pen font-semibold">
+                      02 · Why Theory Alone Fails
+                    </span>
+                    <h3 className="mt-2 font-serif text-xl sm:text-2xl text-ink font-normal">
+                      Attempt → Examiner Feedback → Fix
+                    </h3>
+                    <p className="mt-2.5 text-xs sm:text-sm text-ink-muted leading-relaxed">
+                      In <strong className="text-ink font-medium">Reading &amp; Listening</strong>, our BDT 499 Self-Prep Guides can push your score up fast because answers are objective. In <strong className="text-ink font-medium">Writing &amp; Speaking</strong>, watching videos or reading tips alone cannot show you your own grammar and coherence blind spots—you need live red-pen correction.
+                    </p>
+                  </div>
+
+                  {/* Column 3: 50% PDF Fee Credit Guarantee */}
+                  <div className="pt-6 lg:pt-0 lg:col-span-4 lg:pl-6">
+                    <span className="block font-mono text-[11px] uppercase tracking-widest text-ink font-semibold">
+                      03 · Risk-Free Upgrade Path
+                    </span>
+                    <h3 className="mt-2 font-serif text-xl sm:text-2xl text-ink font-normal">
+                      50% PDF Fee Credit Guarantee
+                    </h3>
+                    <p className="mt-2.5 text-xs sm:text-sm text-ink-muted leading-relaxed">
+                      Not ready for a full course yet? Start with any <strong className="text-ink font-medium">Self-Prep Guide (BDT 499)</strong> or the <strong className="text-ink font-medium">Complete 4-Guide Bundle (BDT 1,499)</strong>. If you join the 12-Week Batch or 1-to-1 Crash Course within 14 days, <strong className="text-ink font-medium">50% of what you paid for your PDFs is deducted</strong> from your course fee.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -1511,6 +1762,16 @@ export default function App() {
 
             <div className="flex flex-wrap items-center gap-6 font-mono text-xs sm:text-right">
               <a
+                href="/study-plan"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateToStudyPlan();
+                }}
+                className="text-ink font-medium underline underline-offset-4 hover:text-violet-pen"
+              >
+                Free Study Plan Builder
+              </a>
+              <a
                 href="/diagnostic"
                 onClick={(e) => {
                   e.preventDefault();
@@ -1529,6 +1790,16 @@ export default function App() {
                 className="text-ink font-medium underline underline-offset-4 hover:text-violet-pen"
               >
                 Self-Prep Guides (BDT 499)
+              </a>
+              <a
+                href="/tips"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateToTips();
+                }}
+                className="text-examiner-red font-medium underline underline-offset-4 hover:text-violet-pen"
+              >
+                Mistake of the Week Tips
               </a>
               <div>
                 <span className="text-ink-subtle">WhatsApp Direct: </span>
@@ -1612,10 +1883,117 @@ export default function App() {
             </div>
           )}
 
-          {/* Mandatory Disclaimer */}
+          {/* Secondary Links to All Crawl Routes, Case Study, Tips Hub, Payment Verification & Share Result */}
+          <div className="py-5 border-b border-rule flex flex-col gap-3 font-mono text-xs">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <a
+                href="/"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateHome();
+                }}
+                className="text-ink hover:text-violet-pen underline underline-offset-4"
+              >
+                IELTS DECODED Home
+              </a>
+              <a
+                href="/diagnostic"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateToDiagnostic();
+                }}
+                className="text-ink hover:text-violet-pen underline underline-offset-4"
+              >
+                Free IELTS Writing Checker (/diagnostic)
+              </a>
+              <a
+                href="/study-plan"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateToStudyPlan();
+                }}
+                className="text-ink hover:text-violet-pen underline underline-offset-4"
+              >
+                Free IELTS Study Plan Builder (/study-plan)
+              </a>
+              <a
+                href="/guides"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateToGuides();
+                }}
+                className="text-ink hover:text-violet-pen underline underline-offset-4"
+              >
+                4-Module Self-Prep PDF Guides (/guides)
+              </a>
+              <a
+                href="/tips"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateToTips();
+                }}
+                className="text-ink hover:text-violet-pen underline underline-offset-4"
+              >
+                Most Common IELTS Mistakes &amp; Tips (/tips)
+              </a>
+              <a
+                href="/case-study"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateToCaseStudy();
+                }}
+                className="text-ink hover:text-violet-pen underline underline-offset-4"
+              >
+                Band 6.0 → 7.5+ Essay Case Study (/case-study)
+              </a>
+              <a
+                href="/band-calculator"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (typeof window !== 'undefined') {
+                    window.history.pushState({}, '', '/band-calculator');
+                    syncClientSeoForRoute('/band-calculator');
+                    setCurrentRoute('diagnostic');
+                    setMobileMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className="text-ink-muted hover:text-ink underline underline-offset-4"
+              >
+                IELTS Band Calculator (/band-calculator)
+              </a>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => openActionModal('paid_verification')}
+                className="text-violet-pen hover:text-ink underline underline-offset-4 cursor-pointer"
+              >
+                I’ve Paid — Submit TrxID
+              </button>
+              <button
+                type="button"
+                onClick={() => openActionModal('share_result')}
+                className="text-ink-muted hover:text-ink underline underline-offset-4 cursor-pointer"
+              >
+                Share Your IELTS Result
+              </button>
+              <a
+                href="/sitemap.xml"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-ink-subtle hover:text-ink underline underline-offset-4"
+              >
+                XML Sitemap
+              </a>
+            </div>
+          </div>
+
+          {/* Mandatory Disclaimer (Item 23) */}
           <div className="pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-ink-subtle leading-relaxed">
             <p>
-              IELTS DECODED is not affiliated with or endorsed by IELTS, British Council, IDP or Cambridge. Band scores are estimates.
+              IELTS DECODED is not affiliated with or endorsed by IELTS, British Council, IDP or Cambridge. Band scores are estimates. Individual results vary. Educational purposes only.
             </p>
             <p className="font-mono tabular-nums shrink-0">
               © {new Date().getFullYear()} IELTS DECODED
@@ -1659,12 +2037,25 @@ export default function App() {
       )}
 
       {/* =====================================================================
-          FREE RESCUE GUIDE LEAD-CAPTURE & AUTOMATIC DOWNLOAD MODAL
+          FREE RESCUE GUIDE & 5-PAGE SAMPLE CHAPTER MODAL
          ===================================================================== */}
       <FreeRescueModal
         isOpen={rescueModalOpen}
         sourceLabel={rescueModalSource}
-        onClose={() => setRescueModalOpen(false)}
+        sampleModuleId={sampleModuleId}
+        onClose={() => {
+          setRescueModalOpen(false);
+          setSampleModuleId(null);
+        }}
+      />
+
+      {/* =====================================================================
+          CONVERSION ACTION MODALS (I've Paid, Batch Application, Share Result, Waitlist)
+         ===================================================================== */}
+      <ConversionActionModal
+        activeModal={activeActionModal}
+        defaultProduct={actionModalDefaultProduct}
+        onClose={() => setActiveActionModal(null)}
       />
 
       {/* =====================================================================

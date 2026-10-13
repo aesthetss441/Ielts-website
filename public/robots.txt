@@ -2,6 +2,12 @@ User-agent: *
 Allow: /
 Allow: /guides
 Allow: /diagnostic
+Allow: /writing-checker
+Allow: /band-calculator
+Allow: /study-plan
+Allow: /tips
+Allow: /case-study
+Allow: /llms.txt
 
 # Sitemaps
-Sitemap: https://ieltsdecoded.com/sitemap.xml
+Sitemap: https://ielts-decoded.ai.studio/sitemap.xml

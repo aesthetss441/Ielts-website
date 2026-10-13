@@ -77,6 +77,13 @@ export const SELF_PREP_SERIES_FACTS = {
   edition: 'First edition 2026',
   totalPages: 222,
   unitPriceBdt: 499,
+  allFourRegularPriceBdt: 1996,
+  allFourBundlePriceBdt: 1499,
+  allFourSavingsBdt: 500,
+  courseUpgradeCreditNote:
+    '50% Course Fee Credit Guarantee: Buy any Self-Prep PDF Guide today—if you join the 12-Week Batch or 1-to-1 Crash Course within 14 days, 50% of what you paid for your PDFs is deducted from your live course fee.',
+  deliveryNote:
+    'Instant WhatsApp & Email PDF delivery within 15–30 minutes after TrxID verification (9 AM – 11 PM BST).',
   licenceNote: "Licensed for the buyer's personal study. No sharing or reselling.",
   originalityNote:
     'All passages, scripts, maps, charts, questions, prompts and model answers are original exam-style practice written for these guides.',
@@ -475,3 +482,8 @@ export const GUIDES_FAQ_ITEMS = [
       'Not in the guides. The guides include self-marking rubrics and error logs for studying alone; our live programs include personal writing correction and speaking feedback.',
   },
 ];
+
+export function getGuideById(id: GuideModuleId): GuideData | undefined {
+  return SELF_PREP_GUIDES.find((g) => g.id === id);
+}
+
